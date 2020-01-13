@@ -978,14 +978,16 @@ GR_MemPoolData *ClusterSlotsOption(int iStartSlot, int iEndSlot, char *szIP, uin
             return nullptr;
         }
         char *szNodeId = "0e25908a9078fe6f881c8ecef1b7e3e9afacb239";
+        char *szNodeId1 = "0e25908a9078fe6f881c8ecef1b7e3e9afacb239";
+        char *szNodeId2 = "0e25908a9078fe6f881c8ecef1b7e3e9afacb239";
         //*3\r\n:4096\r\n:8191\r\n*3\r\n$13\r\n192.168.21.95\r\n:10002\r\n$40\r\n0e25908a9078fe6f881c8ecef1b7e3e9afacb239\r\n
         int pos = sprintf(pData->m_uszData, "*3\r\n*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n%s\r\n", iStartSlot, iEndSlot, 
             strlen(szIP), szIP, usPort, szNodeId);
         int iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n%s\r\n", iStartSlot, iEndSlot, 
-            strlen(szIP), szIP, usPort, szNodeId);
+            strlen(szIP), szIP, usPort, szNodeId1);
         pos += iLen;
         iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n%s\r\n", iStartSlot, iEndSlot, 
-            strlen(szIP), szIP, usPort, szNodeId);
+            strlen(szIP), szIP, usPort, szNodeId2);
         return pData;
     }
     catch(exception &e)
