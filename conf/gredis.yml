@@ -75,16 +75,6 @@ redis-rsp-tt: 200
 # ip            : 
 balance-mode: system
 
-# accept balance
-# load balance policy config
-# independence ip list will 
-# 
-lb-policy: 
-    independence-ip:
-        - 192.168.21.95
-    load-balance-ip:
-        - 192.168.21.213
-
 # create share memery key id
 # shm-key: 
 
@@ -107,7 +97,6 @@ replicate:
         - addr: 0.0.0.0:6381
 #          user: 
 #          auth: 
-    mediacy-file: ./conf/masterinfo.data
     pre-filters:
         - player-
         - player_skin_
