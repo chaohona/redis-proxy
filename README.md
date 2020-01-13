@@ -28,6 +28,6 @@ gredis--|src <br/>
 make <br/>	
 
 怎么运行 <br/>
-./bin/gredis-proxy -c ./conf/gredis.toml  <br/>
+./bin/gredis-proxy -c ./conf/gredis.yml <br/>
 
 yaml解析库为0.6.0版本 <br/>
