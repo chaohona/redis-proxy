@@ -49,4 +49,4 @@ done
 redis-cli -h $REDIS_IP -p 10001 cluster addslots {0..4095}
 redis-cli -h $REDIS_IP -p 10002 cluster addslots {4096..8191}
 redis-cli -h $REDIS_IP -p 10003 cluster addslots {8192..12287}
-redis-cli -h $REDIS_IP -p 10003 cluster addslots {12288..16383}
+redis-cli -h $REDIS_IP -p 10004 cluster addslots {12288..16383}
