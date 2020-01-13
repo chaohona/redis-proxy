@@ -1,0 +1,121 @@
+# GRedis configuration file example.
+
+# proxy     :default mode
+# replica   :replica data from redis list in <replicaof>, not support, please use redis-port https://github.com/CodisLabs/redis-port
+# aof-load  :load aof files to cluster in <aof-files>
+# rdb-load  :load aof files to cluster in <rdb-files>, not support, please use redis-port https://github.com/CodisLabs/redis-port
+work-mode: proxy
+
+#################################proxy#################################
+#gproxy-mode means how gproxy work.
+#gproxy-mode could be configed as twemproxy, cluster, or default. below is example
+#gproxy-mode twemproxy 			-proxy work as twemporxy
+#gproxy-mode codis	 			-proxy work as codis
+#gproxy-mode cluster			-proxy work with redis official cluster
+#gproxy-mode default			-proxy work as gredis define cluster
+route-mode: cluster
+
+#if gproxy-mode configed as twemproxy, gproxy need twemproxy conf file
+#twemproxy mode only could has one pool
+twemproxy-conf: "./conf/nutcracker.yml"
+
+#if gproxy-mode configed as codis, gproxy need codis conf file
+#codis-dashboard	-codis dashboard config file
+#codis-proxy		-codis proxy config file
+codis-dashboard: "./conf/dashboard.toml"
+codis-proxy: "./conf/proxy.toml"
+
+# same as redis configration cluster-config-file
+cluster-config-file: "./conf/cluster_conf.conf"
+# if gproxy-mode configed as cluster or default, proxy will listen on cluster-listen addr
+cluster-listen: 0.0.0.0:6379
+
+# By default gredis-proxy does not run as a daemon. Use 'yes' if you need it.
+# Note that gredis-proxy will write a pid file in /var/run/gredis-proxy.pid when daemonized.
+daemonize: no
+
+# Specify the server verbosity level.
+# This can be one of:
+# none          (no log)                                                        print:nothing
+# error         (error happend)                                                 print:error
+# warning       (many rarely useful info, but not a mess like the debug level)  print:error,warning
+# info          (only very important / critical messages are logged)            print:error,warning,info
+# debug         (a lot of information, useful for development/testing)          print:all
+loglevel: none
+
+# Specify the log file name. Also the empty string can be used to force
+# Redis to log on the standard output. Note that if you use standard
+# output for logging but daemonize, logs will be sent to /dev/null
+logfile: ""
+
+# commands can not be used
+# you should best not use this, but config rename-command in redis config as a replacement
+command-blacklist:
+  - keys
+  - flushdb
+  - flushall
+  - config
+  - select
+
+# commands can not be used, if not configed, all the commands could be used.
+command-whitelist:
+
+# work process number, if it is not set or setted as 0, the proxy will work on single mode.
+work-proceses: 10
+
+# accept clients each child process
+work-connections: 200
+
+# response from redis tt
+redis-rsp-tt: 200
+
+# use system socket balance
+# system        : system balance
+# connects      : connects numbers
+# ip            : 
+balance-mode: system
+
+# accept balance
+# load balance policy config
+# independence ip list will 
+# 
+lb-policy: 
+    independence-ip:
+        - 192.168.21.95
+    load-balance-ip:
+        - 192.168.21.213
+
+# create share memery key id
+# shm-key: 
+
+# time precision, ms
+time-precision: 20
+
+# admin address
+admin-addr: 0.0.0.0:8000
+
+# Use replicaof to make a gredis-proxy instance a copy of
+# another Redis server. A few things to understand ASAP about Redis replication.
+replicate:
+    masters:
+        - addr: 0.0.0.0:6379
+#          user: 
+#          auth: 
+        - addr: 0.0.0.0:6380
+#          user: 
+#          auth: 
+        - addr: 0.0.0.0:6381
+#          user: 
+#          auth: 
+    mediacy-file: ./conf/masterinfo.data
+    pre-filters:
+        - player-
+        - player_skin_
+        - package-
+# load the aof files to redis cluster
+aof-files:
+    - redis.aof
+    
+rdb-files:
+    - redis.rdb   
+    
