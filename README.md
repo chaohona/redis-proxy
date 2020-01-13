@@ -7,6 +7,9 @@
 3、cluster<br/>
 代理可以管理redis原生的集群，支持在线扩缩容 <br/> <br/>
 
+设计方案与测试方案<br/>
+https://github.com/chaohona/redis-proxy/tree/master/documents<br/>
+
 
 代码目录结构 <br/>
 gredis--|src <br/>
