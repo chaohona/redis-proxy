@@ -10,23 +10,6 @@
 设计方案与测试报告<br/>
 https://github.com/chaohona/redis-proxy/tree/master/documents<br/>
 
-
-代码目录结构 <br/>
-gredis--|src <br/>
-			|codis <br/>
-			|common <br/>
-			|example <br/>
-			|proxy <br/>
-			|redis <br/>
-			|store <br/>
-			|thirdparty <br/>
-		|conf <br/>
-		|lib <br/>
-		|bin <br/>
-		|shell <br/>
-		Makefile <br/>
-		README.md <br/>
-
 怎么编译 <br/>
 make <br/>	
 
