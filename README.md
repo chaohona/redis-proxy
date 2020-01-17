@@ -10,6 +10,8 @@
 设计方案与测试报告<br/>
 https://github.com/chaohona/redis-proxy/tree/master/documents<br/>
 
+公司内部已线上使用 <br/>
+
 怎么编译 <br/>
 make <br/>	
 
