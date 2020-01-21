@@ -7,25 +7,10 @@
 3、cluster<br/>
 代理可以管理redis原生的集群，支持在线扩缩容 <br/> <br/>
 
-设计方案与测试方案<br/>
+设计方案与测试报告<br/>
 https://github.com/chaohona/redis-proxy/tree/master/documents<br/>
 
-
-代码目录结构 <br/>
-gredis--|src <br/>
-			|codis <br/>
-			|common <br/>
-			|example <br/>
-			|proxy <br/>
-			|redis <br/>
-			|store <br/>
-			|thirdparty <br/>
-		|conf <br/>
-		|lib <br/>
-		|bin <br/>
-		|shell <br/>
-		Makefile <br/>
-		README.md <br/>
+公司内部已线上使用 <br/>
 
 怎么编译 <br/>
 make <br/>	

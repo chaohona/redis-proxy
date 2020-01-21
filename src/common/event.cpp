@@ -8,13 +8,13 @@ GR_Event::GR_Event(int iFD)
 {
     this->m_szAddr[0] = 0;
     this->m_iFD = iFD;
-    this->m_uiEventId = GR_Event::global_event_id + 1;
+    this->m_uiEventId = ++GR_Event::global_event_id;
 }
 
 GR_Event::GR_Event()
 {
     this->m_szAddr[0] = 0;
-    this->m_uiEventId = GR_Event::global_event_id + 1;
+    this->m_uiEventId = ++GR_Event::global_event_id;
 }
 
 GR_Event::~GR_Event()
