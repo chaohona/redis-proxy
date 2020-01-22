@@ -7,7 +7,7 @@
 3、cluster<br/>
 代理可以管理redis原生的集群，支持在线扩缩容 <br/> <br/>
 
-[设计方案与测试报告](https://github.com/chaohona/redis-proxy/blob/master/documents/%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)
+[测试报告](https://github.com/chaohona/redis-proxy/blob/master/documents/%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)
 
 公司内部已线上使用 <br/>
 
