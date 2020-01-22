@@ -18,3 +18,43 @@ make <br/>
 ./bin/gredis-proxy -c ./conf/gredis.yml <br/>
 
 yaml解析库为0.6.0版本 <br/>
+
+
+## Redis协议特点
++ 请求与相应的映射关系靠的是顺序的一一对应，没有回调数据，先发送的请求先响应
++ 协议头没有协议的整体字节长度信息，只有一个字符一个字符的解析协议，才能知道协议的边界在哪
+
+## 代码主流程
++ main->GR_Run->GR_MasterProcess(监控进程)
++ main->GR_Run->GR_StartNewChild(启动工作进程)->GR_Proxy::WorkLoop
+
+## GR_Proxy：进程管理类
+
+## GR_Epoll: epoll网络事件管理类
+## GR_Event: 网络事件基类，redis和client的连接都继承自它
+
+## GR_AccessMgr: 客户端管理类
++ GR_AccessMgr::CreateListenEvent 启动监听端口
++ GR_AccessMgr::CreateClientEvent 创建客户端连接GR_AccessEvent
+
+## GR_AccessEvent: 客户端连接
++ m_ReadCache 消息接收buffer
++ m_ReadMsg 消息解析器，用于解析收到的redis协议的消息
++ m_pRoute Redis连接管理，客户端消息路由处理类
++ m_pWaitRing 等待响应的请求等待队列
++ GR_AccessEvent::Read->ProcessMsg处理从客户端过来的消息
+	+ m_pRoute->Route 将消息路由给对应的Redis
++ GR_AccessEvent::DoReply 处理从redis响应的消息
+	+  GR_AccessEvent::Sendv 向客户端发送收到的响应
+
+## GR_RedisEvent：Redis连接
++ m_ReadCache 消息接收buffer
++ m_ReadMsg 消息解析器，用于解析收到的redis协议的消息
++ m_pWaitRing 等待响应的请求等待队列
++ GR_RedisEvent::Sendv 向Redis发送收到的客户端的请求
++ GR_RedisEvent::Read->ProcessMsg 处理从Redis过来的消息
+	+ pIdenty->GetReply 将响应返回给客户端
+	
+## GR_Route：Redis连接管理基类，处理请求到Redis的路由
++ GR_ClusterRoute Redis原生集群的消息路由处理类
++ GR_TwemRoute Twem模式的消息路由处理类
