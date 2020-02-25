@@ -349,7 +349,9 @@ int GR_AccessEvent::ProcessMsg(int &iNum)
             // TODO 告警
             //ASSERT(false);
             GR_LOGE("wait for response pool is full, fd %d, addr %s:%d", this->m_iFD, this->m_szAddr, this->m_uiPort);
-            return GR_FULL;
+            this->Close();
+            
+            return GR_ERROR;
         }
         // 解析消息
         iParseRet = this->m_ReadMsg.ParseRsp();
@@ -535,7 +537,8 @@ int GR_AccessEvent::ReInit()
         if (GR_OK != this->m_ReadMsg.ReInit(this->m_ReadCache.m_pData->m_uszData))
         {
             return GR_ERROR;
-        }
+        }
+
         ASSERT(this->m_pWaitRing != nullptr);
         if (GR_OK != this->m_pWaitRing->ReInit())
         {
