@@ -234,7 +234,7 @@ uint64  GR_GetNowMS()
     timeval tv;
 
     gettimeofday(&tv, NULL); // linux系统实现是从共享内存中获取时间，不涉及到系统调用，速度满足要求
-    return tv.tv_sec * 1000 + tv.tv_usec/1000;
+    return tv.tv_sec * 1000 + tv.tv_usec/1000 + 28800000; // +28800000 取东8区时间
 }
 
 void
@@ -407,5 +407,18 @@ int sdsll2str(char *s, long long value) {
     }
     return l;
 }
+
+char *gr_strchr(char *p, char *last, char c)
+{
+    while (p < last) {
+        if (*p == c) {
+            return p;
+        }
+        p++;
+    }
+
+    return NULL;
+}
+
 
 

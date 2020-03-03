@@ -1,5 +1,7 @@
 #include "redismsg.h"
 #include "gr_proxy_global.h"
+#include "config.h"
+#include "proxy.h"
 #include <ctype.h>
 #include <stdarg.h>
 
@@ -879,6 +881,7 @@ int GR_MsgProcess::Init()
     REDIS_RSP_DEFINE(REDIS_RSP_UNSPPORT_CMD);
     REDIS_RSP_DEFINE(REDIS_RSP_SYNTAX);
     REDIS_RSP_DEFINE(REDIS_REQ_ASK);
+    REDIS_RSP_DEFINE(REDIS_REQ_TO_LARGE);
     return GR_OK;
 }
 
@@ -966,6 +969,23 @@ GR_MemPoolData* GR_MsgProcess::AskingCmd()
     return g_asking_data;
 }
 
+//"*1\r\n$7\r\nflushdb\r\n"
+GR_MemPoolData* GR_MsgProcess::FlushdbCmd()
+{
+    static GR_MemPoolData *g_flushdb_data;
+    if (g_flushdb_data != nullptr)
+    {
+        return g_flushdb_data;
+    }
+    g_flushdb_data = GR_MEMPOOL_GETDATA(512);
+    char *szCmd = "*1\r\n$7\r\nflushdb\r\n";
+    memcpy(g_flushdb_data->m_uszData, szCmd, strlen(szCmd));
+    g_flushdb_data->m_sUsedSize = strlen(szCmd);
+    g_flushdb_data->m_cStaticFlag = 1;
+    return g_flushdb_data;
+}
+
+
 GR_MemPoolData *ClusterSlotsOption(int iStartSlot, int iEndSlot, char *szIP, uint16 usPort)
 {
     try
@@ -978,16 +998,14 @@ GR_MemPoolData *ClusterSlotsOption(int iStartSlot, int iEndSlot, char *szIP, uin
             return nullptr;
         }
         char *szNodeId = "0e25908a9078fe6f881c8ecef1b7e3e9afacb239";
-        char *szNodeId1 = "0e25908a9078fe6f881c8ecef1b7e3e9afacb238";
-        char *szNodeId2 = "0e25908a9078fe6f881c8ecef1b7e3e9afacb237";
         //*3\r\n:4096\r\n:8191\r\n*3\r\n$13\r\n192.168.21.95\r\n:10002\r\n$40\r\n0e25908a9078fe6f881c8ecef1b7e3e9afacb239\r\n
         int pos = sprintf(pData->m_uszData, "*3\r\n*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n%s\r\n", iStartSlot, iEndSlot, 
             strlen(szIP), szIP, usPort, szNodeId);
         int iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n%s\r\n", iStartSlot, iEndSlot, 
-            strlen(szIP), szIP, usPort, szNodeId1);
+            strlen(szIP), szIP, usPort, szNodeId);
         pos += iLen;
         iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n%s\r\n", iStartSlot, iEndSlot, 
-            strlen(szIP), szIP, usPort, szNodeId2);
+            strlen(szIP), szIP, usPort, szNodeId);
         return pData;
     }
     catch(exception &e)
@@ -1011,7 +1029,6 @@ GR_MemPoolData* GR_MsgProcess::ReplicateCmd(int iArgNum, ...)
         pArgsData = GR_MEMPOOL_GETDATA(2048); // szCmd长度不会超过10位数
         size_t argslen = 0;
         va_start(ap,iArgNum);
-
         int pos = 0;
         int iLen = 0;
         while(1) {
@@ -1040,8 +1057,33 @@ GR_MemPoolData* GR_MsgProcess::ReplicateCmd(int iArgNum, ...)
     }
 }
 
+GR_MemPoolData* GR_MsgProcess::SelectCmd(int iDB)
+{
+    try
+    {
+        GR_MemPoolData *pData;
+        pData = GR_MEMPOOL_GETDATA(512); // szCmd长度不会超过10位数
+        if (pData == nullptr)
+        {
+            return nullptr;
+        }
+
+        int pos = sprintf(pData->m_uszData, "*2\r\n$6\r\nselect\r\n$%d\r\n%d\r\n", digits10(iDB), iDB);
+        pData->m_sUsedSize = pos;
+        return pData;
+    }
+    catch(exception &e)
+    {
+        GR_LOGE("package dollar got exception:%s", e.what());
+        return nullptr;
+    }
+    
+    return nullptr;
+}
+
+
 // 
-GR_MemPoolData* GR_MsgProcess::CLusterSlots(char *szIp, uint16 usPort)
+GR_MemPoolData* GR_MsgProcess::ClusterSlots(char *szIp, uint16 usPort)
 {
     static char *szNodeId = "0e25908a9078fe6f881c8ecef1b7e3e9afacb239";
     // 0-10383
@@ -1057,15 +1099,29 @@ GR_MemPoolData* GR_MsgProcess::CLusterSlots(char *szIp, uint16 usPort)
         {
             return nullptr;
         }
-        char *szNodeId = "0e25908a9078fe6f881c8ecef1b7e3e9afacb239";
+        GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+        char *szNodeId = "fbec008dfd093d2f9753f7058b8642484119e1ae";
+        char *szNodeId1 = "4101a328ac736cccfe65e1cfafef003e631b56b9";
+        char *szNodeId2 = "698c3b1f3f7b773c5255f3ecd44cca76b46d74bc";
+        uint16 usPort1 = usPort;
+        uint16 usPort2 = usPort + 1;
+        uint16 usPort3 = usPort + 2;
         //*3\r\n:4096\r\n:8191\r\n*3\r\n$13\r\n192.168.21.95\r\n:10002\r\n$40\r\n0e25908a9078fe6f881c8ecef1b7e3e9afacb239\r\n
-        int pos = sprintf(pData->m_uszData, "*3\r\n*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n$40\r\n%s\r\n", 0, 4095, 
+        int pos = sprintf(pData->m_uszData, "*3\r\n*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n$40\r\n%s\r\n", 0, 5460, 
             strlen(szIp), szIp, usPort, szNodeId);
-        int iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n$40\r\n%s\r\n", 4096, 8191, 
-            strlen(szIp), szIp, usPort, szNodeId);
+        if (pConfig->m_bSupportClusterSlots)
+        {
+            usPort = usPort2;
+        }
+        int iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n$40\r\n%s\r\n", 5461, 10922, 
+            strlen(szIp), szIp, usPort, szNodeId1);
         pos += iLen;
-        iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n$40\r\n%s\r\n", 8192, 10383, 
-            strlen(szIp), szIp, usPort, szNodeId);
+        if (pConfig->m_bSupportClusterSlots)
+        {
+            usPort = usPort3;
+        }
+        iLen = sprintf(pData->m_uszData + pos, "*3\r\n:%d\r\n:%d\r\n*3\r\n$%d\r\n%s\r\n:%d\r\n$40\r\n%s\r\n", 10923, 10383, 
+            strlen(szIp), szIp, usPort, szNodeId2);
         pos += iLen;
         pData->m_uszData[pos] = '\0';
         pData->m_sUsedSize = pos;
@@ -1079,6 +1135,7 @@ GR_MemPoolData* GR_MsgProcess::CLusterSlots(char *szIp, uint16 usPort)
     
     return nullptr;
 }
+
 
 // 自己组装的消息不要超过1024个字符
 /* Format a command according to the Redis protocol. This function takes the

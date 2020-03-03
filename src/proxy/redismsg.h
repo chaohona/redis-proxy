@@ -95,6 +95,7 @@ enum
     GR_CMD_EVALSHA,
     GR_CMD_SENTINEL_GET_MASTER, // sentinel get-master-addr-by-name
     GR_CMD_CLUSTER_NODES,
+    GR_CMD_SELECT,
 }GR_REDIS_CMD;
 
 enum
@@ -216,6 +217,9 @@ public:
     uint8           iWaitDone:1;        // 已经得到响应了
     uint8           iRspDone:1;         // 响应是否发送完成
     uint8           iStaticFlag:1;      // 不回收标记
+    uint8           iBroadcast:1;
+    uint16          iNeedWaitNum = 1;   // 需要等待几个redis响应
+    uint16          iGotNum = 0;        // 等到的响应
     uint16          uiCmdType;
     GR_Event        *pAccessEvent = nullptr;    // 消息的来源
     GR_Event        *pRedisEvent = nullptr;     // 处理消息的redis,如果此值为null则表示没有发送给对应的redis
@@ -275,9 +279,11 @@ public:
     GR_MemPoolData* ClusterCmd();
     GR_MemPoolData* ClusterNodesCmd();
     GR_MemPoolData* AskingCmd();
-    GR_MemPoolData* CLusterSlots(char *szIp, uint16 usPort);
+    GR_MemPoolData* FlushdbCmd();
     // 发送的消息的长度不要超过2048个字节
     GR_MemPoolData* ReplicateCmd(int iArgNum, ...);
+    GR_MemPoolData* SelectCmd(int iDB);
+    GR_MemPoolData* ClusterSlots(char *szIp, uint16 usPort);
 
     static GR_MsgProcess* m_pInstance;
 private:
@@ -308,6 +314,9 @@ str4icmp(m, '-', 'a', 's', 'k')
 #define IS_SELECT_CMD(m)\
 str6icmp(m, 's', 'e', 'l', 'e', 'c', 't')
 
+#define IS_OK_RESULT(redismsg)\
+(redismsg.m_Info.iLen == 5 && str5icmp(redismsg.szStart, '+', 'o', 'k', '\r', '\n'))
+
 //INFO
 #define IS_CLUSTER_INFO(info)\
 (info.iKeyLen == 4 && str4icmp(info.szKeyStart, 'i', 'n', 'f', 'o'))
@@ -323,5 +332,15 @@ str6icmp(m, 's', 'e', 'l', 'e', 'c', 't')
 
 #define IF_CLUSTER_SUPPORT_CMD(info)\
 (IS_CLUSTER_SLOTS(info) || IS_CLUSTER_INFO(info) || IS_CLUSTER_KEYSLOT(info) || IS_CLUSTER_NODES(info) )
+
+#define IS_FLUSH(info)\
+(info.iCmdLen>5 && str5icmp(info.szCmd, 'f', 'l', 'u', 's', 'h'))
+
+#define GR_NOT_SRPPORT_CMD(info)\
+((info.iCmdLen == 6 && IS_SELECT_CMD(info.szCmd)) || IS_FLUSH(info))
+
+#define IS_RESET(info)\
+(info.iCmdLen==7 && str7icmp(info.szCmd, '_', 'r', 'e', 's', 'e', 't', '_'))
+
 
 #endif

@@ -76,7 +76,7 @@ int GR_WorkChannelEvent::Read()
 
 int GR_WorkChannelEvent::ProcAdminMsg(GR_ChannelMsg &channleMsg)
 {
-    GR_GInfo* pInfo = GR_ProxyShareInfo::Instance()->Info;
+    /*GR_GInfo* pInfo = GR_ProxyShareInfo::Instance()->Info;
     int iIdx = GR_Proxy::Instance()->m_iChildIdx;
     GR_WorkProcessInfo *pWorkInfo = &pInfo->Works[iIdx];
     switch (channleMsg.iCommand)
@@ -107,7 +107,7 @@ int GR_WorkChannelEvent::ProcAdminMsg(GR_ChannelMsg &channleMsg)
             GR_LOGE("got invalid msg fro channel:%d", channleMsg.iCommand);
             return GR_OK;
         }
-    }
+    }*/
     return GR_OK;
 }
 

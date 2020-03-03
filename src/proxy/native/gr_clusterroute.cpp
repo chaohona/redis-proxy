@@ -10,7 +10,7 @@ int GR_GetClusterNodesCB(GR_TimerMeta * pMeta, void *pCB)
     GR_LOGI("get cluster nodes info callback.");
     GR_ClusterRoute *pRoute = (GR_ClusterRoute*)pCB;
     pRoute->ReInitFinish(); // 打开重连开关
-    if (GR_OK == GR_RedisMgr::Instance()->m_pRoute->ReInit())
+    if (GR_OK == pRoute->ReInit())
     {
         if (pMeta != nullptr)
         {
@@ -20,7 +20,6 @@ int GR_GetClusterNodesCB(GR_TimerMeta * pMeta, void *pCB)
     }
     return GR_OK;
 }
-
 
 GR_ClusterSeedEvent::GR_ClusterSeedEvent()
 {
@@ -37,6 +36,7 @@ int GR_ClusterSeedEvent::GetReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty)
     {
         case GR_CMD_CLUSTER_NODES:
         {
+            this->m_iGotNodes = 1;
             int64 lNow = GR_GetNowMS();
             this->m_pRoute->m_lNextGetClustesMS = lNow + 1000; // 间隔1秒再重试
             ASSERT(this->m_pRoute != nullptr);
@@ -110,45 +110,56 @@ int GR_ClusterSeedEvent::ParseClusterNodes(GR_RedisMsgResults &Results)
     }
     // 如果有slots没有对应的redis，则退出进程
     bool bReady = false;
-    static uint64 iInitFlag = 0;
     if (GR_OK != this->m_pRoute->ReadyCheck(bReady) || !bReady)
     {
         // TODO 告警
         GR_LOGE("slot to redis not ready.");
-        if (iInitFlag == 0) // 启动有问题则进程直接退出
+        if (this->m_pRoute->m_uiReConnectTimes == 0) // 启动有问题则进程直接退出
         {
             exit(0);
         }
         else // 说明还在选举期间，则重新获取
         {
             this->m_pRoute->m_iReInitFlag = 1; // 关闭重连开关
-            GR_TimerMeta *pMeta = GR_Timer::Instance()->AddTimer(GR_GetClusterNodesCB, this->m_pRoute, 500, true);
+            GR_Timer::Instance()->AddTimer(GR_GetClusterNodesCB, this->m_pRoute, 500, true);
         }
     }
     else
     {
+        GR_ClusterRoute *pRoute = dynamic_cast<GR_ClusterRoute*>(this->m_pRoute);
         this->m_pRoute->ReInitFinish();
-        GR_LOGI("redis cluster reinit success.");
-        ++iInitFlag;
-        if (iInitFlag > 1024)
+        GR_LOGI("redis cluster reinit success:%s", pRoute->m_strGroup.c_str());
+        ++this->m_pRoute->m_uiReConnectTimes;
+        if (this->m_pRoute->m_uiReConnectTimes > 1024)
         {
-            iInitFlag = 2;
+            this->m_pRoute->m_uiReConnectTimes = 2;
         }
-        if (iInitFlag == 1)
+        // 只有在连接redis没问题的情况下才会启动监听端口
+        if (this->m_pRoute->m_uiReConnectTimes == 1)
         {
             int iRet = GR_OK;
             GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
-            GR_AccessMgr *pMgr = &GR_Proxy::Instance()->m_AccessMgr;
+            GR_AccessMgr *pMgr = this->m_pRoute->m_pAccessMgr;
             // 启动监听端口
             if (pConfig->m_iBAType != GR_PROXY_BA_IP)
             {
-                iRet = pMgr->Listen(pConfig->m_strIP.c_str(), pConfig->m_usPort, 
-                    pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
+                if (!pConfig->m_bSupportClusterSlots)
+                {
+                    iRet = pMgr->Listen(pConfig->m_strIP.c_str(), pConfig->m_usPort, 
+                        pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
+                }
+                else
+                {
+                    // 如果需要支持cluster slots命令，则启动3个端口，端口号在配置的基础上加0-2
+                    uint16 usPort = pConfig->m_usPort + (GR_Proxy::Instance()->m_ulInnerId%GR_CLUSTER_SLOTS_MIX_CASE);
+                    iRet = pMgr->Listen(pConfig->m_strIP.c_str(), usPort, 
+                        pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
+                }
             }
             if (iRet != GR_OK)
             {
-                GR_LOGE("listen failed:%d", iRet);
-                exit(0);
+                GR_LOGE("redis group listen failed:%s", this->m_pRoute->m_strGroup.c_str());
+                return iRet;
             }
         }
     }
@@ -322,6 +333,11 @@ int GR_ClusterSeedEvent::Close(bool bForceClose)
         {
             this->m_pRoute->ReInitFinish();
             this->m_pRoute->m_pClusterSeedRedis = nullptr;
+            // 如果没有获取过cluster nodes则需要重新获取
+            if (this->m_iGotNodes == 0)
+            {
+                GR_Timer::Instance()->AddTimer(GR_GetClusterNodesCB, this->m_pRoute, 500, true);
+            }
         }
         GR_RedisEvent::Close(true); // 不走断线重连流程
         delete this;
@@ -348,23 +364,32 @@ GR_ClusterRoute::~GR_ClusterRoute()
 {
 }
 
-int GR_ClusterRoute::Init(GR_Config *pConfig)
+int GR_ClusterRoute::Init(string &strGroup, YAML::Node& node)
 {
-    ASSERT(pConfig!=nullptr);
     try
     {
+        if (GR_OK != GR_Route::Init(strGroup, node))
+        {
+            GR_LOGE("init route group failed:%s", strGroup.c_str());
+            return GR_ERROR;
+        }
+        
+        this->m_strGroup = strGroup;
         this->m_vServers = new GR_RedisServer*[MAX_REDIS_GROUP];
         memset(this->m_vServers, 0, sizeof(GR_RedisServer*)*MAX_REDIS_GROUP);
         memset(this->m_vRedisSlot, 0, sizeof(GR_RedisServer*)*CLUSTER_SLOTS);
+        memset(this->m_szSeedIP, '\0', NET_IP_STR_LEN);
         // 1、解析集群配置文件
-        if (GR_OK != ParseNativeClusterCfg(pConfig->m_strClusterConfig))
+        if (GR_OK != ParseNativeClusterCfg(node))
         {
             GR_LOGE("prase native cluster config failed");
             return GR_ERROR;
         }
-        // 2、和集群建立连接
+        
+        // 解析监听端口
+        
+        // 和集群建立连接
         return this->ConnectToSeedRedis();
-        // 3、发送"cluster slots"命令，获取集群全部信息
     }
     catch(exception &e)
     {
@@ -414,7 +439,7 @@ int GR_ClusterRoute::ReInit()
         return GR_OK;
     }
 
-    GR_LOGI("begin to reinit cluster info.");
+    GR_LOGI("begin to reinit cluster info:%s", this->m_strGroup.c_str());
     // 重新获取port和端口号
     
     for (int i=0; i<CLUSTER_SLOTS; i++)
@@ -432,7 +457,7 @@ int GR_ClusterRoute::ReInit()
             continue;
         }
         // 如果所有Redis都断开了则尝试和老的SeedRedis重连
-        this->m_usPort = m_vRedisSlot[i]->pEvent->m_uiPort;
+        this->m_usSeedPort = m_vRedisSlot[i]->pEvent->m_uiPort;
         memcpy(this->m_szSeedIP, m_vRedisSlot[i]->pEvent->m_szAddr, NET_IP_STR_LEN);
         break;
     }
@@ -464,9 +489,9 @@ int GR_ClusterRoute::ConnectToSeedRedis()
         }
         this->m_pClusterSeedRedis = new GR_ClusterSeedEvent();
         this->m_pClusterSeedRedis->m_pRoute = this;
-        if (GR_OK != this->m_pClusterSeedRedis->ConnectToRedis(this->m_usPort, this->m_szSeedIP))
+        if (GR_OK != this->m_pClusterSeedRedis->ConnectToRedis(this->m_usSeedPort, this->m_szSeedIP))
         {
-            GR_LOGE("connecto to seed redis failed:%d,%s", this->m_usPort, this->m_szSeedIP);
+            GR_LOGE("connecto to seed redis failed:%d,%s", this->m_usSeedPort, this->m_szSeedIP);
             return GR_ERROR;
         }
         return GR_OK;
@@ -590,109 +615,43 @@ int GR_ClusterRoute::SlotChanged(GR_MsgIdenty *pIdenty, GR_RedisEvent *pEvent)
 }
 
 // 分析原始集群日志，获取集群中可用master的ip与port
-int GR_ClusterRoute::ParseNativeClusterCfg(string &strClusterCfg)
+int GR_ClusterRoute::ParseNativeClusterCfg(YAML::Node &node)
 {
-    int maxline, j;
-    FILE *fp = fopen(strClusterCfg.c_str(), "r");
-    if (fp == nullptr)
+    if (!node["listen"])
     {
-        GR_LOGE("fopen failed:%s, errno:%d, errmsg:%s", strClusterCfg.c_str(), errno, strerror(errno));
+        GR_LOGE("redis group list not configed:%s", this->m_strGroup.c_str());
+        return GR_ERROR;
+    }
+    this->m_strListen = node["listen"].as<string>();
+    if (!node["seed_redis"])
+    {
         return GR_ERROR;
     }
 
-    struct stat sb;
-    if (fstat(fileno(fp),&sb) != -1 && sb.st_size == 0) {
-        fclose(fp);
-        GR_LOGE("fstat failed:%s, errno:%d, errmsg:%s", strClusterCfg.c_str(), errno, strerror(errno));
+    if (!node["seed_redis"])
+    {
+        GR_LOGE("redis seed_redis not configed:%s", this->m_strGroup.c_str());
         return GR_ERROR;
     }
-
-    maxline = 1024+CLUSTER_SLOTS*128;
-    char *line = new char[maxline];
-    char address[128];
-    char *p, *s;
-    while(fgets(line, maxline, fp) != nullptr)
+    string strSeedAddr = node["seed_redis"].as<string>();
+    string  strIP;
+    if (GR_OK != ParseAddr(strSeedAddr, strIP, this->m_usSeedPort))
     {
-        /* Skip blank lines, they can be created either by users manually
-         * editing nodes.conf or by the config writing process if stopped
-         * before the truncate() call. */
-        if (line[0] == '\n' || line[0] == '\0') continue;
-
-        auto results = split(line, " ");
-        if (results.size() == 0)
-        {
-            GR_LOGE("redis cluster config is invalid:%s", line);
-            return GR_ERROR;
-        }
-
-        if (results[0] == "vars")
-        {
-            continue;
-        }
-        /* Regular config lines have at least eight fields */
-        if (results.size() < 8)
-        {
-            GR_LOGE("redis cluster config is invalid:%s", line);
-            return GR_ERROR;
-        }
-
-        /* Parse flags */
-        p = s = (char*)results[2].c_str();
-        int flags = 0;
-        while(p) {
-            p = strchr(s,',');
-            if (p) *p = '\0';
-            if (!strcasecmp(s,"myself")) {
-                flags |= CLUSTER_NODE_MYSELF;
-            } else if (!strcasecmp(s,"master")) {
-                flags |= CLUSTER_NODE_MASTER;
-            } else if (!strcasecmp(s,"slave")) {
-                flags |= CLUSTER_NODE_SLAVE;
-            } else if (!strcasecmp(s,"fail?")) {
-                flags |= CLUSTER_NODE_PFAIL;
-            } else if (!strcasecmp(s,"fail")) {
-                flags |= CLUSTER_NODE_FAIL;
-            } else if (!strcasecmp(s,"handshake")) {
-                flags |= CLUSTER_NODE_HANDSHAKE;
-            } else if (!strcasecmp(s,"noaddr")) {
-                flags |= CLUSTER_NODE_NOADDR;
-            } else if (!strcasecmp(s,"nofailover")) {
-                flags |= CLUSTER_NODE_NOFAILOVER;
-            } else if (!strcasecmp(s,"noflags")) {
-                /* nothing to do */
-            } else {
-                GR_LOGE("Unknown flag in redis cluster config file");
-                return GR_ERROR;
-            }
-            if (p) s = p+1;
-        }
-        // 不是主master，或者不在线
-        if ( (flags&CLUSTER_NODE_MASTER)==0 || (flags&CLUSTER_NODE_PFAIL)!=0 || (flags&CLUSTER_NODE_FAIL)!=0
-            || (flags&CLUSTER_NODE_HANDSHAKE)!=0 )
-        {
-            continue;
-        }
-
-        /* Address and port */
-        memcpy(address, results[1].c_str(), results[1].length());
-        if ((p = strrchr(address, ':')) == NULL)
-        {
-            GR_LOGE("redis cluster config is invalid:%s", line);
-            return GR_ERROR;
-        }
-        *p = '\0';
-        memcpy(this->m_szSeedIP, address, strlen(address)+1);
-        char *port = p+1;
-        char *busp = strchr(port,'@');
-        if (busp) {
-            *busp = '\0';
-        }
-        this->m_usPort = atoi(port);
-        break;
+        GR_LOGE("parse seed addr failed, group:%s, addr:%s", this->m_strGroup.c_str(), strSeedAddr.c_str());
+        return GR_ERROR;
     }
-    if (this->m_usPort == 0)
+    int iLen = NET_IP_STR_LEN;
+    if (iLen > strIP.length())
     {
-        GR_LOGE("parse cluster config failed, port is zero.");
+        iLen = strIP.length();
+    }
+    memcpy(m_szSeedIP, strIP.c_str(), iLen);
+
+    // 解析监听端口
+    this->m_strListen = node["listen"].as<string>();
+    if (GR_OK != ParseAddr(this->m_strListen, this->m_strListenIP, this->m_usListenPort))
+    {
+        GR_LOGE("invalid listen of group %s", this->m_strGroup.c_str() );
         return GR_ERROR;
     }
     return GR_OK;
@@ -711,7 +670,7 @@ int GR_ClusterRoute::AddRedisServer(GR_ClusterInfo &info, GR_RedisServer* &pServ
     // 连接Redis
     if (pServer->pEvent == nullptr || !pServer->pEvent->ConnectOK())
     {
-        if (GR_OK != pServer->Connect())
+        if (GR_OK != pServer->Connect(this))
         {
             GR_LOGE("connect to redis failed %s:%d", info.szIP, info.usPort);
             return GR_ERROR;
@@ -782,7 +741,7 @@ int GR_ClusterRoute::ReadyCheck(bool &bReady)
     {
         if (m_vRedisSlot[i] == nullptr || m_vRedisSlot[i]->pEvent == nullptr || !m_vRedisSlot[i]->pEvent->ConnectOK())
         {
-            GR_LOGE("can not find redis for slot:%d", i);
+            GR_LOGE("can not find redis for slot:%d, groupname:%s", i, this->m_strGroup.c_str());
             return GR_OK;
         }
     }
@@ -812,4 +771,39 @@ int GR_ClusterRoute::DelRedis(GR_RedisEvent *pEvent)
     return GR_OK;
 }
 
+GR_ClusterRouteGroup::GR_ClusterRouteGroup()
+{
+}
+
+GR_ClusterRouteGroup::~GR_ClusterRouteGroup()
+{
+}
+
+int GR_ClusterRouteGroup::Init(GR_Config *pConfig)
+{
+    try
+    {
+        this->m_vRoute = new GR_ClusterRoute[GR_MAX_GROUPS];
+        YAML::Node node = YAML::LoadFile(pConfig->m_strClusterConfig.c_str());
+        string strGroup;
+        int index = 0;
+        GR_ClusterRoute *pRoute = dynamic_cast<GR_ClusterRoute*>(this->m_vRoute);
+        for(auto c=node.begin(); c!=node.end(); c++, ++pRoute)
+        {
+            strGroup = c->first.as<string>();
+            pRoute = dynamic_cast<GR_ClusterRoute*>(pRoute);
+            if (GR_OK != pRoute->Init(strGroup, c->second))
+            {
+                GR_LOGE("init redis route failed:%s", strGroup.c_str());
+                return GR_ERROR;
+            }
+        }
+    }
+    catch(exception &e)
+    {
+        GR_LOGE("init route group got exception:%s", e.what());
+        return GR_ERROR;
+    }
+    return GR_OK;
+}
 

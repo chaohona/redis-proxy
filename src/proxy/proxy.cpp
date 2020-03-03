@@ -16,6 +16,7 @@
 #include <sys/wait.h>
 
 void GR_SendSignal(int signal);
+int GR_StartNewChild();
 
 using namespace std;
 
@@ -53,7 +54,8 @@ int GR_Proxy::Init()
             return GR_ERROR;
         }
         this->m_iRouteMode = this->m_Config.m_iRouteMode;
-        this->m_iSvrType = this->m_Config.m_iSvrType;;
+        this->m_iSvrType = this->m_Config.m_iSvrType;
+        // 匿名共享内存，在父进程中绑定共享内存，子进程中直接用就可以了
         if  (GR_OK != this->m_Shm.Alloc(GR_ProxyShareInfo::Instance()->Size()))
         {
             cout<< "init share memery failed." << endl;
@@ -126,11 +128,11 @@ int GR_Proxy::WorkPrepare(int iIdx)
     int status;   
     // 将父进程继承过来的无用的句柄都关闭并从epoll触发器中删除
     // 1、关闭admin监听句柄
-    if (this->m_AdminMgr.m_iListenFD > 0)
+    /*if (this->m_AdminMgr.m_iListenFD > 0)
     {
         close(this->m_AdminMgr.m_iListenFD);
         this->m_AdminMgr.m_iListenFD = 0;
-    }
+    }*/
     // 2、关闭继承过来的channel句柄
     GR_ProxyShareInfo* pShareInfo = GR_ProxyShareInfo::Instance();
     GR_WorkProcessInfo *pWorkInfo = nullptr;
@@ -140,14 +142,7 @@ int GR_Proxy::WorkPrepare(int iIdx)
     status = GR_RedisMgr::Instance()->Init(&this->m_Config);
     if (GR_OK != status)
     {
-        GR_LOGE("redis mgr init failed:%d, %d", iIdx, status);
-        return status;
-    }
-
-    status = m_AccessMgr.Init();
-    if (GR_OK != status)
-    {
-        GR_LOGE("access mgr init failed:%d, %d", iIdx, status);
+        cout << "redis mgr init failed:" << iIdx << ", " << status << endl;
         return status;
     }
 
@@ -290,7 +285,7 @@ int GR_Proxy::WorkLoop()
             ulSkip = 100;
         }
         pEpoll->EventLoopProcess(ulSkip); 
-        m_AccessMgr.ProcPendingEvents();
+        //m_AccessMgr.ProcPendingEvents();
         iAcceptNum = pEpoll->ProcEvent(GR_LISTEN_EVENT);
         pEpoll->ProcEventNotType(GR_LISTEN_EVENT);
         ulNow = CURRENT_MS();
@@ -298,13 +293,13 @@ int GR_Proxy::WorkLoop()
         if (ulNow - ulRedisCheckMS > 10*1000)
         {
             ulRedisCheckMS = ulNow;
-            GR_RedisMgr::Instance()->LoopCheck();
+            //GR_RedisMgr::Instance()->LoopCheck();
         }
         if (ulNow - ulAccessCheckMS > 60*10*1000)
         {
             ulAccessCheckMS = ulNow;
             // 检查客户端连接超时
-            this->m_AccessMgr.LoopCheck();
+            //this->m_AccessMgr.LoopCheck();
         }
         // 收到退出信号
         if (gr_global_signal.Exit == 1)
@@ -391,22 +386,8 @@ int GR_Proxy::LoadData(int iIdx, int iTotalProc)
 static void
 GR_SingleMode()
 {
-    GR_Proxy *pProxy = GR_Proxy::Instance();
-    GR_AdminMgr *pAdmin = &pProxy->m_AdminMgr;
-    if (GR_OK != pAdmin->Init())
-    {
-        GR_LOGE("admin init failed.");
-        return;
-    }
-    int iIdx = 0;
-    if (GR_OK != pProxy->WorkPrepare(iIdx))
-    {
-        GR_LOGE("work process prepare failed:%d", iIdx);
-        return;
-    }
-    pProxy->WorkLoop();
-    GR_LOGI("work process exit %d,%d", iIdx, pProxy->m_iPid);
-    return;
+    GR_StartNewChild();
+    GR_LOGI("work as single mode, parent process exist.");
 }
 
 // 子进程加载完在共享内存中更新状态为加载完成，然后退出，父进程收到子进程退出消息后检测状态
@@ -778,12 +759,12 @@ GR_MasterProcess()
     }
     SetSysTimer(iTimePrecision);
 
-    GR_AdminMgr *pAdmin = &pProxy->m_AdminMgr;
+    /*GR_AdminMgr *pAdmin = &pProxy->m_AdminMgr;
     if (GR_OK != pAdmin->Init())
     {
         GR_LOGE("admin init failed.");
         return;
-    }
+    }*/
     GR_ProxyShareInfo *pShareInfo = GR_ProxyShareInfo::Instance();
     int64  ulStartMS = pShareInfo->GetCurrentMS(true);
     int64  ulNowMS = ulStartMS;
@@ -890,6 +871,12 @@ static int GR_Run(int iWorkProcess)
     if (iWorkProcess > MAX_WORK_PROCESS_NUM)
     {
         iWorkProcess = MAX_WORK_PROCESS_NUM;
+    }
+    GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+    // 如果是集群模式，并且需要适配"cluster slots"命令，则至少需要三个监听端口，也就是需要三个工作进程
+    if (pConfig->m_iRouteMode == PROXY_ROUTE_CLUSTER && pConfig->m_bSupportClusterSlots && iWorkProcess < GR_CLUSTER_SLOTS_MIX_CASE)
+    {
+        iWorkProcess = GR_CLUSTER_SLOTS_MIX_CASE;
     }
     // 启动子进程
     for (auto i=0; i<iWorkProcess; i++)

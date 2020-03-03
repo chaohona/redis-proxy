@@ -44,7 +44,7 @@ GR_ProxyShareInfo *GR_ProxyShareInfo::Instance()
 
 int GR_ProxyShareInfo::Bind(void * pShareAddr)
 {
-    this->Info = new (pShareAddr)GR_GInfo();
+    this->Info = (GR_GInfo*)pShareAddr;
     memset(&this->Info->Works, 0, sizeof(GR_WorkProcessInfo)*(MAX_WORK_PROCESS_NUM+1));
     return GR_OK;
 }

@@ -10,6 +10,9 @@
 #define GR_REDISMSG_INSTANCE()\
 GR_RedisMgr::m_pInstance
 
+#define GR_ROUTE_GROUP()\
+GR_RedisMgr::m_pInstance->m_pRouteGroup
+
 
 class GR_RedisMgr
 {
@@ -24,11 +27,12 @@ public:
     int SentinelConnected(GR_SentinelEvent *pEvent);
     int LoopCheck();
 
-    GR_Route            *m_pRoute = nullptr;
+    
+    GR_RouteGroup       *m_pRouteGroup = nullptr;
     static GR_RedisMgr  *m_pInstance;
 private:
     GR_RedisMgr();
-    int ConnectToRedis();
+    int TwemConnectToRedis();
 
     int                 m_iConnectedNum;    // 已经连接上的redis总数
     GR_RedisEvent       *m_pTempRedis;

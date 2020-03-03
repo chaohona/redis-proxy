@@ -636,7 +636,7 @@ int GR_ReplicaEvent::Replicating(int iRead)
         pIdenty->iWaitRsp = 1;
 
         // 将消息发送给后端redis
-        iRet = GR_RedisMgr::Instance()->ReplicateMsgToRedis(this, pIdenty);
+        //iRet = GR_RedisMgr::Instance()->ReplicateMsgToRedis(this, pIdenty);
         if (GR_OK != iRet)
         {
             // TODO 和后端redis连接有问题的处理

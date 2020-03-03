@@ -1,4 +1,6 @@
 #include "route.h"
+#include "proxy.h"
+#include "config.h"
 
 GR_Route::GR_Route():m_iSrvNum(0), m_vServers(nullptr)
 {
@@ -8,10 +10,25 @@ GR_Route::~GR_Route()
 {
 }
 
-int GR_Route::Init(GR_Config *pConfig)
+int GR_Route::Init()
 {
     this->m_vServers = new GR_RedisServer*[MAX_REDIS_GROUP];
+    this->m_pAccessMgr = new GR_AccessMgr();
+    if (GR_OK != this->m_pAccessMgr->Init(this))
+    {
+        return GR_ERROR;
+    }
     return GR_OK;
+}
+
+int GR_Route::Init(string &strGroup, YAML::Node& node)
+{
+    return this->Init();
+}
+
+int GR_Route::Init(GR_Config *pConfig)
+{
+    return this->Init();
 }
 
 int GR_Route::ReInit()
@@ -32,6 +49,11 @@ GR_RedisEvent* GR_Route::Route(GR_RedisEvent* vEventList, int iNum, GR_AccessEve
 GR_RedisEvent* GR_Route::Route(GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData, GR_RedisMsg &msg, int &iError)
 {
     return nullptr;
+}
+
+int GR_Route::Broadcast(GR_AccessEvent* pAccessEvent,GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData)
+{
+    return GR_OK;
 }
 
 bool GR_Route::GetListenInfo(string &strIP, uint16 &uiPort, int &iBackLog)
@@ -81,17 +103,8 @@ GR_RedisServer* GR_Route::AddRedis(int &iResult)
 {
     try
     {
-        if (this->m_iSrvNum+1 == MAX_REDIS_GROUP)
-        {
-            GR_LOGE("too many redis configed");
-            iResult = GR_ERROR;
-            return nullptr;
-        }
         GR_RedisServer *pServer = new GR_RedisServer();
-        pServer->ulIdx = this->m_iSrvNum;
-        this->m_vServers[this->m_iSrvNum] = pServer;
-        this->m_iSrvNum+=1;
-        //this->m_mapServers[pServer->ulIdenty] = pServer;
+        this->AddRedis(pServer, iResult);
         return pServer;
     }
     catch(exception &e)
@@ -101,6 +114,31 @@ GR_RedisServer* GR_Route::AddRedis(int &iResult)
         return nullptr;
     }
 }
+
+GR_RedisServer* GR_Route::AddRedis(GR_RedisServer* pServer, int &iResult)
+{
+    iResult = GR_OK;
+    try
+    {
+        if (this->m_iSrvNum+1 == MAX_REDIS_GROUP)
+        {
+            GR_LOGE("too many redis configed");
+            iResult = GR_ERROR;
+            return nullptr;
+        }
+        pServer->ulIdx = this->m_iSrvNum;
+        this->m_vServers[this->m_iSrvNum] = pServer;
+        this->m_iSrvNum+=1;
+        return pServer;
+    }
+    catch(exception &e)
+    {
+        GR_LOGE("add redis got exception:%s", e.what());
+        iResult = GR_ERROR;
+        return nullptr;
+    }
+}
+
 
 GR_RedisServer* GR_Route::GetRedis(char *szIP, uint16 usPort)
 {
@@ -203,6 +241,62 @@ int GR_Route::DelRedis(GR_RedisEvent *pEvent)
         return GR_ERROR;
     }
     
+    return GR_OK;
+}
+
+int GR_Route::ConnectToRedis()
+{
+    int iRet;
+    GR_RedisServer *pServer;
+    for (int i=0; i<this->m_iSrvNum; i++)
+    {
+        pServer = this->m_vServers[i];
+        iRet = pServer->Connect(this);
+        if (iRet != GR_OK)
+        {
+            GR_LOGE("connect to redis failed:%s", pServer->strInfo.c_str());
+            return GR_ERROR;
+        }
+    }
+    
+    GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+    // 启动监听端口
+    if (pConfig->m_iBAType != GR_PROXY_BA_IP)
+    {
+        iRet = this->m_pAccessMgr->Listen(pConfig->m_strIP.c_str(), pConfig->m_usPort, 
+            pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
+    }
+    if (iRet != GR_OK)
+    {
+        GR_LOGE("listen failed.");
+        exit(0);
+    }
+    
+    return GR_OK;
+}
+
+GR_RouteGroup::GR_RouteGroup()
+{
+}
+
+GR_RouteGroup::~GR_RouteGroup()
+{
+}
+
+int GR_RouteGroup::Init(GR_Config *pConfig)
+{
+    return GR_OK;
+}
+
+int GR_RouteGroup::ConnectToRedis()
+{
+    for (GR_Route *pRoute=this->m_vRoute; pRoute!=nullptr; pRoute++)
+    {
+        if (GR_OK != pRoute->ConnectToRedis())
+        {
+            return GR_ERROR;
+        }
+    }
     return GR_OK;
 }
 

@@ -28,7 +28,7 @@ GR_SentinelEvent::~GR_SentinelEvent()
 
 int GR_SentinelEvent::GetReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty)
 {
-    ASSERT(pData != nullptr);
+    /*ASSERT(pData != nullptr);
     switch (pIdenty->uiCmdType)
     {
         case GR_CMD_SENTINEL_GET_MASTER:
@@ -67,7 +67,7 @@ int GR_SentinelEvent::GetReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty)
         {
             
         }
-    }
+    }*/
 
     return GR_OK;
 }

@@ -57,8 +57,8 @@ private:
     GR_ClusterInfo GetClusterInfo(vector<GR_String> &vNodeData, int &iResult);
 public:
     GR_ClusterRoute *m_pRoute = nullptr;
+    int m_iGotNodes = 0;        // 是否获得过集群信息的标记
 };
-
 
 class GR_ClusterRoute: public GR_Route
 {
@@ -66,7 +66,7 @@ public:
     GR_ClusterRoute();
     virtual ~GR_ClusterRoute();
 
-    virtual int Init(GR_Config *pConfig);
+    virtual int Init(string &strGroup, YAML::Node& node);
     virtual int ReInit();
     int ReInitFinish();
     virtual GR_RedisEvent* Route(char *szKey, int iLen, int &iError);
@@ -79,7 +79,7 @@ public:
     int ReadyCheck(bool &bReady);
     virtual int DelRedis(GR_RedisEvent *pEvent);
 public:
-    int ParseNativeClusterCfg(string &strClusterCfg);
+    int ParseNativeClusterCfg(YAML::Node &node);
     uint32 KeyHashSlot(char *szKey, int iKeyLen);
 
 public:
@@ -89,9 +89,19 @@ public:
     GR_RedisServer          *m_vRedisSlot[CLUSTER_SLOTS];   // 分片和Redis的映射关系
     
     char                    m_szSeedIP[NET_IP_STR_LEN];     // SeedRedis的IP
-    uint16                  m_usPort = 0;                   // SeedRedis的Port
+    uint16                  m_usSeedPort = 0;                   // SeedRedis的Port
     GR_ClusterSeedEvent     *m_pClusterSeedRedis = nullptr; // 用来获取集群信息的Redis
     int64                   m_lNextGetClustesMS = 0;
+    uint32                  m_uiReConnectTimes = 0; // 和后端redis重连次数
+};
+
+class GR_ClusterRouteGroup: public GR_RouteGroup
+{
+public:
+    GR_ClusterRouteGroup();
+    virtual ~GR_ClusterRouteGroup();
+
+    virtual int Init(GR_Config *pConfig);
 };
 
 #endif

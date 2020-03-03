@@ -13,6 +13,8 @@
 #include "gr_proxy_global.h"
 
 class GR_AccessMgr;
+class GR_Route;
+class GR_RouteGroup;
 
 // TODO 内存池怎么设计，是使用拷贝的方式，还是使用twen的零内存拷贝方式，需要测试
 class GR_AccessEvent : public GR_Event
@@ -25,6 +27,7 @@ public:
     // 发生错误
     virtual int GetReply(int iErr, GR_MsgIdenty *pIdenty);
     virtual int GetReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty);
+    int DoReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty);
     int ReInit();
     int SetAddr(int iFD, sockaddr &sa, socklen_t &salen);
     int ProcPendingMsg(bool &bFinish);
@@ -37,7 +40,6 @@ public:
 
 private:
     int Sendv(iovec * iov, int nsend);
-    int DoReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty);
     // 开始解析下一条
     int StartNext(bool bRealseReq = true);
     int ProcessMsg(int &iNum);
@@ -57,13 +59,14 @@ public:
 
     GR_AccessMgr        *m_pMgr = nullptr;
     uint64              m_ulIdx = 0;
+    GR_Route            *m_pRoute = nullptr;
 };
 
 // 代理的接入层管理，管理代理和前端的通信
 class GR_AccessMgr : public GR_ListenMgr
 {
 public:
-    int Init();
+    int Init(GR_Route  *pRoute);
 public:
     GR_AccessMgr();
     virtual ~GR_AccessMgr();
@@ -88,27 +91,7 @@ public:
     int                 m_iPendingFlag = 0;
     GR_AccessEvent**    m_pPendingClients = nullptr; // 有阻塞的数据没有发送出去的客户端
     GR_ProxyShareInfo*  m_pgShareInfo = nullptr;
-};
-
-
-#define GR_ACCESS_MGR_LIST()    \
-GR_AccessMgrList::m_pInstance
-
-#define GR_MAX_LISTENS  256    // 最多可以同时管理256个集群
-
-// 管理多个监听服务。后加的支持多个集群的服务，所以看起来有点怪
-class GR_AccessMgrList
-{
-public:
-    GR_AccessMgrList();
-
-    int Init();
-private:
-    ~GR_AccessMgrList();
-public:
-    GR_AccessMgr    *m_vAccessMgrList;
-
-    static GR_AccessMgrList* m_pInstance;
+    GR_Route            *m_pRoute = nullptr;
 };
 
 #endif

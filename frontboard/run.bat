@@ -1,0 +1,1 @@
+src\iris\iris.exe -config=.\config.json

@@ -36,10 +36,11 @@ public:
     virtual int Read();
     virtual int Error();
     virtual int Close(bool bForceClose = false);
+    virtual int ResultCheck(GR_MsgIdenty* pIdenty);
 
 private:
-    int StartNext(bool bReleaseData = false);
     int ProcessMsg(int &iNum);
+    int StartNext(bool bReleaseData = false);
     int Init();
     int ReInit();
     bool SlotPending(GR_MsgIdenty *pIdenty);
@@ -58,6 +59,7 @@ public:
     uint64                  m_ulFirstMsgMS = 0; // 最早的等待redis响应的消息的发送时间
     int                     m_iRedisRspTT = 200;
     GR_TimerMeta            *pConnectingMeta = nullptr;
+    GR_Route                *m_pRoute = nullptr;
 };
 
 class GR_RedisServer
@@ -66,7 +68,7 @@ public:
     GR_RedisServer();
     virtual ~GR_RedisServer();
 
-    virtual int Connect();
+    virtual int Connect(GR_Route *pRoute);
     string  strSentinelName = string("");       // 在sentinel里面的名字
     string  strInfo = string("");               /* server: as "hostname:port:weight name" */
     string  strPName = string("");              /* server: as "hostname:port:weight" */

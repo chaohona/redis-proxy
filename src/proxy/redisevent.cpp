@@ -31,13 +31,13 @@ int GR_RedisEventReconnectCB(GR_TimerMeta * pMeta, void *pCB)
     }
     else // sentinel模式，走重新获取redis地址流程
     {
-        if (GR_OK == pServer->Connect())
+        /*if (GR_OK == pServer->Connect())
         {
             GR_LOGI("reconnect to redis success %s:%d", pServer->strAddr.c_str(), pServer->iPort);
             return GR_OK;
         }
         GR_LOGE("reconnect to redis failed %s:%d", pServer->strAddr.c_str(), pServer->iPort);
-        return GR_ERROR;
+        return GR_ERROR;*/
     }
     return GR_OK;
 }
@@ -323,6 +323,12 @@ int GR_RedisEvent::ProcessMsg(int &iNum)
             this->Close();
             return GR_ERROR;
         }
+        if (GR_OK != this->ResultCheck(pIdenty))
+        {
+            this->Close();
+            GR_LOGE("result check failed %s:%d", this->m_szAddr, this->m_uiPort);
+            return GR_ERROR;
+        }
         // 更新最早一个消息的发送时间
         //pFirstIdenty = (GR_MsgIdenty *)this->m_pWaitRing->GetFront();
         GR_RB_GETFRONT(GR_MsgIdenty*, pFirstIdenty, this->m_pWaitRing);
@@ -336,7 +342,7 @@ int GR_RedisEvent::ProcessMsg(int &iNum)
         }
         this->m_ReadCache.m_pData->m_sUsedSize = this->m_ReadMsg.m_Info.iLen;
         // 这个地方比较简单，就不用多态实现了
-        if (PROXY_ROUTE_CLUSTER == GR_PROXY_INSTANCE()->m_iRouteMode && this->SlotPending(pIdenty))
+        if (GR_IS_CLUSTER_MODE() && this->SlotPending(pIdenty))
         {
             this->StartNext(true); // 此处响应不需要继续使用了，释放响应内存
             continue;
@@ -350,6 +356,11 @@ int GR_RedisEvent::ProcessMsg(int &iNum)
     return GR_OK;
 }
 
+int GR_RedisEvent::ResultCheck(GR_MsgIdenty* pIdenty)
+{
+    return GR_OK;
+}
+
 #define REINIT_REDIRECT_MSG(msg)                    \
 msg.StartNext();                                    \
 msg.ReInit(this->m_ReadCache.m_pData->m_uszData);   \
@@ -359,7 +370,7 @@ bool GR_RedisEvent::SlotPending(GR_MsgIdenty *pIdenty)
 {
     try
     {
-        GR_ClusterRoute *pRoute = (GR_ClusterRoute*)GR_RedisMgr::Instance()->m_pRoute;
+        GR_ClusterRoute *pRoute = dynamic_cast<GR_ClusterRoute*>(this->m_pRoute);
         if (this->m_ReadMsg.m_Info.iErrFlag == 0)
         {
             if (pIdenty->bRedirect)
@@ -545,7 +556,7 @@ int GR_RedisEvent::Close(bool bForceClose)
         GR_Event::Close();
         if (this->m_iRedisType == REDIS_TYPE_MASTER)
         {
-            GR_RedisMgr::Instance()->m_pRoute->DelRedis(this);
+            this->m_pRoute->DelRedis(this);
         }
         // TODO 向没有获取到响应的请求发送错误响应
         if (this->m_pWaitRing != nullptr)
@@ -565,7 +576,7 @@ int GR_RedisEvent::Close(bool bForceClose)
             // cluster模式断线重连走ReInit流程
             if (GR_Proxy::Instance()->m_iRouteMode == PROXY_ROUTE_CLUSTER)
             {
-                if (GR_OK != GR_RedisMgr::Instance()->m_pRoute->ReInit())
+                if (GR_OK != this->m_pRoute->ReInit())
                 {
                     GR_LOGE("reconnect redis cluster flow failed.");
                 }
@@ -771,7 +782,7 @@ int GR_RedisEvent::ConnectFailed()
         // 如果是主责需要重新连接
         if (this->m_iRedisType == REDIS_TYPE_MASTER)
         {
-            GR_RedisMgr::Instance()->m_pRoute->ReInit();
+            this->m_pRoute->ReInit();
         }
     }
     else
@@ -813,7 +824,7 @@ bool GR_RedisServer::operator == (GR_RedisServer &other)
     return this->strAddr == other.strAddr;
 }
 
-int GR_RedisServer::Connect()
+int GR_RedisServer::Connect(GR_Route *pRoute)
 {
     int iRet = GR_OK;
     try
@@ -825,6 +836,7 @@ int GR_RedisServer::Connect()
             this->pEvent = nullptr;
         }
         this->pEvent = new GR_RedisEvent(this);
+        this->pEvent->m_pRoute = pRoute;
         this->pEvent->m_iRedisType = REDIS_TYPE_MASTER;
         iRet = this->pEvent->ConnectToRedis(this->iPort, this->strHostname.c_str());
         if (iRet != GR_OK)

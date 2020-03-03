@@ -161,5 +161,6 @@ uint64(*(bytes+4))<<24 | uint64(*(bytes+5))<<16 | uint64(*(bytes+6))<<8 | uint64
 int ll2string(char *dst, size_t dstlen, long long svalue);
 uint32_t digits10(uint64_t v);
 int sdsll2str(char *s, long long value);
+char *gr_strchr(char *p, char *last, char c);
 
 #endif

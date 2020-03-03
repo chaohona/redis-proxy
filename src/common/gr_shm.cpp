@@ -35,16 +35,11 @@ int GR_Shm::ShmAt()
 {
     try
     {
+        // 绑定共享内存
         this->m_szAddr = (char*)shmat(this->m_iShmId, NULL, 0);
         if (this->m_szAddr == (void*)-1)
         {
             GR_LOGE("shmat failed %d", this->m_iShmId);
-            return GR_ERROR;
-        }
-
-        if (shmctl(this->m_iShmId, IPC_RMID, NULL) == -1)
-        {
-            GR_LOGE("shmctl faild %d", this->m_iShmId);
             return GR_ERROR;
         }
     }
@@ -58,9 +53,25 @@ int GR_Shm::ShmAt()
 
 void GR_Shm::Free()
 {
-    if (shmdt(this->m_szAddr) == -1)
+    try
     {
-        GR_LOGE("shmdt failed %p", this->m_szAddr);
+        // 打上删除标记
+        if (shmctl(this->m_iShmId, IPC_RMID, NULL) == -1)
+        {
+            GR_LOGE("shmctl faild %d", this->m_iShmId);
+            return;
+        }
+        // 从进程中分离出去
+        if (shmdt(this->m_szAddr) == -1)
+        {
+            GR_LOGE("shmdt failed %p", this->m_szAddr);
+        }
     }
+    catch(exception &e)
+    {
+        GR_LOGE("shmat got exception:%s", e.what());
+        return;
+    }
+    return;
 }
 

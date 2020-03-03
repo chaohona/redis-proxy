@@ -4,11 +4,6 @@
 #include "route.h"
 #include "include.h"
 
-struct continuum {
-    uint32 index;  /* server index */
-    uint32 value;  /* hash value */
-};
-
 class GR_Dispatch
 {
 public:

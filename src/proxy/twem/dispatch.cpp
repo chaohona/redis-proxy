@@ -76,7 +76,7 @@ int GR_Dispatch::KetamaUpdate(GR_RedisServer     **vRedisServers, continuum *&vS
     continuum_index = 0;
     pointer_counter = 0;
     for (server_index = 0; server_index < nserver; server_index++) {
-        struct GR_RedisServer *server;
+        GR_RedisServer *server;
         float pct;
 
         server = vRedisServers[server_index];
@@ -94,7 +94,7 @@ int GR_Dispatch::KetamaUpdate(GR_RedisServer     **vRedisServers, continuum *&vS
             uint32 x;
 
             hostlen = snprintf(host, KETAMA_MAX_HOSTLEN, "%.*s-%u",
-                               server->strAddr.length(), server->strAddr.c_str(),
+                               server->strName.length(), server->strName.c_str(),
                                pointer_index - 1);
 
             for (x = 0; x < pointer_per_hash; x++) {

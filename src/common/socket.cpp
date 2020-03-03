@@ -56,7 +56,7 @@ int GR_Socket::CreateAndListen(const char *szIp, uint16 usPort, int iBackLog, bo
         GR_LOGE("set socket nonblock failed:%d,errmsg:%s", errno, strerror(errno));
         return GR_ERROR;
     }
-    GR_LOGD("create listen socket success:%d,%d,%d", usPort, iBackLog, iFD);
+    GR_LOGD("create listen socket success, port:%d, fd:%d", usPort, iFD);
     return iFD;
 }
 

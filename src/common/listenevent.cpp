@@ -79,7 +79,7 @@ int GR_ListenMgr::Listen(string strIP, uint16 usPort, int iTcpBack, bool bSystem
     this->m_iListenFD = GR_Socket::CreateAndListen(strIP.c_str(), usPort, iTcpBack, bSystemBa);
     if (this->m_iListenFD <= 0)
     {
-        GR_LOGE("create listen socket failed:%d,errmsg:%s", errno, strerror(errno));
+        GR_LOGE("create listen socket failed, port:%d, errno:%d, errmsg:%s", usPort, errno, strerror(errno));
         return GR_ERROR;
     }
 
@@ -92,6 +92,7 @@ int GR_ListenMgr::Listen(string strIP, uint16 usPort, int iTcpBack, bool bSystem
         return GR_ERROR;
     }
     this->m_pListenEvent->m_iFD = this->m_iListenFD;
+    GR_LOGI("workprocess listen success %s:%d", strIP.c_str(), usPort);
 
     // TODO 改成所有redis都连接上了之后再加入事件处理器
     GR_EPOLL_ADDREAD(this->m_pListenEvent);

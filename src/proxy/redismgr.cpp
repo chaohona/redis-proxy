@@ -3,6 +3,8 @@
 #include "twemroute.h"
 #include "codisroute.h"
 #include "gr_clusterroute.h"
+#include "proxy.h"
+#include "gr_tiny.h"
 
 GR_RedisMgr *GR_RedisMgr::m_pInstance = new GR_RedisMgr();
 
@@ -31,7 +33,7 @@ int GR_RedisMgr::Init(GR_Config *pConfig)
     {
         case PROXY_ROUTE_TWEM:
         {
-            GR_TwemRoute *pRoute = new GR_TwemRoute();
+            /*GR_TwemRoute *pRoute = new GR_TwemRoute();
             this->m_pRoute = pRoute;
             if (GR_OK != this->m_pRoute->Init(pConfig))
             {
@@ -48,13 +50,19 @@ int GR_RedisMgr::Init(GR_Config *pConfig)
             // 根据配置走不同的初始化流程
             if (!this->m_pRoute->m_bSentinel)
             {
-                return this->ConnectToRedis();
+<<<<<<< HEAD
+                return this->TwemConnectToRedis();
             }
             else // 先和sentinel建立连接
+=======
+                return this->ConnectToRedis();
+            }*/
+            /*else // 先和sentinel建立连接
+>>>>>>> remotes/origin/multi_service
             {
                 this->m_pSentinelMgr = new GR_SentinelMgr(pRoute);
                 return this->m_pSentinelMgr->ConnectToSentinel();
-            }
+            }*/
             break;
         }
         case PROXY_ROUTE_CODIS:
@@ -64,11 +72,20 @@ int GR_RedisMgr::Init(GR_Config *pConfig)
         }
         case PROXY_ROUTE_CLUSTER:
         {
-            GR_ClusterRoute *pRoute = new GR_ClusterRoute();
-            this->m_pRoute = pRoute;
-            if (GR_OK != this->m_pRoute->Init(pConfig))
+            this->m_pRouteGroup = new GR_ClusterRouteGroup();
+            if (GR_OK != this->m_pRouteGroup->Init(pConfig))
             {
-                GR_LOGE("cluster route init failed.");
+                GR_LOGE("redis group init failed.");
+                return GR_ERROR;
+            }
+            break;
+        }
+        case PROXY_ROUTE_TINY:
+        {
+            this->m_pRouteGroup = new GR_TinyRouteGroup();
+            if (GR_OK != this->m_pRouteGroup->Init(pConfig))
+            {
+                GR_LOGE("tiny redis group init failed.");
                 return GR_ERROR;
             }
             break;
@@ -79,11 +96,13 @@ int GR_RedisMgr::Init(GR_Config *pConfig)
             return GR_ERROR;
         }
     }
+    return GR_OK;
 }
 
-int GR_RedisMgr::ConnectToRedis()
+int GR_RedisMgr::TwemConnectToRedis()
 {
-    int iRet;
+    return GR_OK;
+    /*int iRet;
     GR_RedisServer *pServer;
     for (int i=0; i<this->m_pRoute->m_iSrvNum; i++)
     {
@@ -95,12 +114,36 @@ int GR_RedisMgr::ConnectToRedis()
             return GR_ERROR;
         }
     }
+    
+<<<<<<< HEAD
+=======
+    int iRet = GR_OK;
+>>>>>>> remotes/origin/multi_service
+    GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+    GR_AccessMgr *pMgr = &GR_Proxy::Instance()->m_AccessMgr;
+    // 启动监听端口
+    if (pConfig->m_iBAType != GR_PROXY_BA_IP)
+    {
+        iRet = pMgr->Listen(pConfig->m_strIP.c_str(), pConfig->m_usPort, 
+            pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
+    }
+    if (iRet != GR_OK)
+    {
+<<<<<<< HEAD
+        GR_LOGE("listen failed:%d", iRet);
+        exit(0);
+    }
     return GR_OK;
+=======
+        GR_LOGE("listen failed.");
+        exit(0);
+    }
+    return GR_OK;*/
 }
 
 int GR_RedisMgr::ReplicateMsgToRedis(GR_ReplicaEvent *pEvent, GR_MsgIdenty *pIdenty)
 {
-    ASSERT(pEvent->m_ReadMsg.m_Info.iKeyLen > 0);
+    /*ASSERT(pEvent->m_ReadMsg.m_Info.iKeyLen > 0);
     int iRet = GR_OK;
     pEvent->m_ReadCache.m_pData->m_sUsedSize = pEvent->m_ReadMsg.m_Info.iLen;
     m_pTempRedis = this->m_pRoute->Route(pIdenty, pEvent->m_ReadCache.m_pData, pEvent->m_ReadMsg, iRet);
@@ -114,12 +157,13 @@ int GR_RedisMgr::ReplicateMsgToRedis(GR_ReplicaEvent *pEvent, GR_MsgIdenty *pIde
         GR_LOGE("transfer message get redis failed");
         return REDIS_RSP_DISCONNECT;
     }
-    return m_pTempRedis->SendMsg(pEvent->m_ReadCache.m_pData, pIdenty);
+    return m_pTempRedis->SendMsg(pEvent->m_ReadCache.m_pData, pIdenty);*/
+    return GR_OK;
 }
 
 int GR_RedisMgr::TransferMsgToRedis(GR_AccessEvent *pEvent, GR_MsgIdenty *pIdenty)
 {
-    ASSERT(pEvent->m_ReadMsg.m_Info.iKeyLen > 0);
+    /*ASSERT(pEvent->m_ReadMsg.m_Info.iKeyLen > 0);
     int iRet = GR_OK;
     pEvent->m_ReadCache.m_pData->m_sUsedSize = pEvent->m_ReadMsg.m_Info.iLen;
     m_pTempRedis = this->m_pRoute->Route(pIdenty, pEvent->m_ReadCache.m_pData, pEvent->m_ReadMsg, iRet);
@@ -135,7 +179,8 @@ int GR_RedisMgr::TransferMsgToRedis(GR_AccessEvent *pEvent, GR_MsgIdenty *pIdent
         //ASSERT(false);
         return REDIS_RSP_DISCONNECT;
     }
-    return m_pTempRedis->SendMsg(pEvent->m_ReadCache.m_pData, pIdenty);
+    return m_pTempRedis->SendMsg(pEvent->m_ReadCache.m_pData, pIdenty);*/
+    return GR_OK;
 }
 
 int GR_RedisMgr::RedisConnected(uint16 uiPort, char *szAddr)
@@ -153,7 +198,7 @@ int GR_RedisMgr::SentinelConnected(GR_SentinelEvent *pEvent)
 int GR_RedisMgr::LoopCheck()
 {
     return GR_OK;
-    ASSERT(this->m_pRoute!=nullptr);
+    /*ASSERT(this->m_pRoute!=nullptr);
     try
     {
         GR_RedisServer  *pServer = nullptr;
@@ -187,6 +232,6 @@ int GR_RedisMgr::LoopCheck()
         return GR_ERROR;
     }
 
-    return GR_OK;
+    return GR_OK;*/
 }
 

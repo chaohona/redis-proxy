@@ -1,0 +1,14 @@
+{
+	"global":{
+		"loglevel":"4",		// 日志级别
+		"logtostderr":"true", 	// 日志是否打印到标准输出
+		"config":"./config/"
+	},
+	"gredis_webserver":{
+		"listen":"0.0.0.0:8888", // 管理系统监听地址
+		"admindb":"127.0.0.1:6380", // 管理redis地址
+		"basepath":"BASE_PATH",
+		"pid":"log/log_frontboard.pid",
+		"log":"log/log_frontboard.log"
+	}
+}

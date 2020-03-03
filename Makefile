@@ -6,10 +6,11 @@ TWEM_INC=-I$(PWD)/src/proxy/twem/
 CODIS_INC=-I$(PWD)/src/proxy/codis/
 NATIVE_INC=-I$(PWD)/src/proxy/native/
 REPLICA_INC=-I$(PWD)/src/proxy/replica/
+TINY_INC=-I$(PWD)/src/proxy/tiny/
 YAML_INC=-I$(PWD)/src/thirdparty/yaml/include/
 THIRD_INC=-I$(PWD)/src/thirdparty/
 GLOG_INC=-I$(PWD)/src/thirdparty/glog/src/
-PROXY_INC=-I$(PWD)/src/proxy/ $(INC) $(REPLICA_INC) $(TWEM_INC) $(CODIS_INC) $(NATIVE_INC) $(THIRD_INC) $(GLOG_INC) $(YAML_INC)
+PROXY_INC=-I$(PWD)/src/proxy/ $(INC) $(TINY_INC) $(REPLICA_INC) $(TWEM_INC) $(CODIS_INC) $(NATIVE_INC) $(THIRD_INC) $(GLOG_INC) $(YAML_INC)
 LIB=-L$(PWD)/lib/ -lyaml-cpp -lpthread
 CXX=g++
 DEBUG=-g -ggdb -rdynamic
@@ -32,9 +33,11 @@ NATIVE_SRC=$(wildcard $(PWD)/src/proxy/native/*.cpp)
 NATIVE_OBJ=$(NATIVE_SRC:%.cpp=%.o)
 REPLICA_SRC=$(wildcard $(PWD)/src/proxy/replica/*.cpp)
 REPLICA_OBJ=$(REPLICA_SRC:%.cpp=%.o)
+TINY_SRC=$(wildcard $(PWD)/src/proxy/tiny/*.cpp)
+TINY_OBJ=$(TINY_SRC:%.cpp=%.o)
 
 ALL_DEPS=$(PWD)/lib/libyaml-cpp.a
-ALL_BIN=$(PROXY) $(STORE)
+ALL_BIN=$(PROXY)
 all: prepare $(ALL_BIN) $(ALL_DEPS)
 
 proxy: prepare $(PROXY)
@@ -45,7 +48,7 @@ store: prepare $(STORE)
 #$(PROXY_OBJ): $(PROXY_SRC)
 #	$(CXX) $(CXXFLAGS) $(INC) -o $@ -c $<
 	
-$(PROXY): $(PROXY_OBJ) $(REPLICA_OBJ) $(COMMON_OBJ) $(TWEM_OBJ) $(NATIVE_OBJ)
+$(PROXY): $(PROXY_OBJ) $(TINY_OBJ) $(REPLICA_OBJ) $(COMMON_OBJ) $(TWEM_OBJ) $(NATIVE_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^  $(DEPS)
 
 $(STORE): $(STORE_OBJ) $(COMMON_OBJ)
@@ -107,7 +110,7 @@ $(LOCK) : $(LOCK_OBJ) $(COMMON_OBJ)
 #######################################################
 
 clean:
-	$(RM) $(COMMON_OBJ) $(PROXY_OBJ) $(STORE_OBJ) $(TWEM_OBJ) $(NATIVE_OBJ)
+	$(RM) $(COMMON_OBJ) $(PROXY_OBJ) $(STORE_OBJ) $(TWEM_OBJ) $(NATIVE_OBJ) $(TINY_OBJ)
 	$(RM) $(ALL_BIN)
 	
 prepare:
@@ -122,6 +125,14 @@ release:
 	@cp -avf bin/* release/proxy/bin
 	@cp -avf conf/* release/proxy/conf
 	@cp -avf run.sh release
+	@cp -avf tiny_run.sh release
 	@cp -avf redis release
+	@mkdir -pv release/frontboard
+	@mkdir -pv release/frontboard/bin
+	@mkdir -pv release/frontboard/config
+	@cp -avf frontboard/bin/* release/frontboard/bin
+	@cp -avf frontboard/config/* release/frontboard/config
+	@cp -avf frontboard/dist release/frontboard/dist
+	@cp -acv frontboard/run.sh release/frontboard
 	@git rev-parse HEAD > release/proxy/version
 	@tar zcvf `date +%Y%m%d%H%M`.tar.gz release/

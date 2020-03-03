@@ -16,7 +16,7 @@ public:
 
 public:
     virtual int Accept(int iFD);
-    virtual int Listen(string strIP, uint16 usPort, int iTcpBack, bool bSystemBa=false);
+    virtual int Listen(string strIP, uint16 usPort, int iTcpBack=1024, bool bSystemBa=false);
     virtual GR_Event* CreateClientEvent(int iFD, sockaddr &sa, socklen_t salen);
     virtual GR_ListenEvent* CreateListenEvent();
 

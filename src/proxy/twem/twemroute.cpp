@@ -22,7 +22,7 @@ int GR_TwemRoute::Init(GR_Config *pConfig)
     try
     {
         this->m_vServers = new GR_RedisServer*[MAX_REDIS_GROUP];
-                
+
         YAML::Node node = YAML::LoadFile(szCfgPath);
 
         auto server = node.begin();
@@ -372,17 +372,57 @@ int GR_TwemRoute::AddYamlRedis(string &strRedisInfo)
     return GR_OK;
 }
 
+#define TWEM_HASH_KEY(TMPKEY, TMPLEN)\
+if (this->m_bHasHashTag) \
+{\
+    char *szTagStart = nullptr;\
+    char *szTagEnd = nullptr;\
+    szTagStart = gr_strchr(szTmpKey, szTmpKey+iTmpLen, this->m_cLeftTag);\
+    if (szTagStart != nullptr)\
+    {\
+        szTagEnd = gr_strchr(szTagStart+1, szTmpKey+iTmpLen, this->m_cRightTag);\
+        if (szTagEnd != nullptr && szTagEnd - szTagStart > 1)\
+        {\
+            szTmpKey = szTagStart + 1;\
+            iTmpLen = szTagEnd - szTmpKey;\
+        }\
+    }\
+}\
+uiKey = this->m_FuncHash(szTmpKey, iTmpLen);
+
+
 GR_RedisEvent* GR_TwemRoute::Route(char *szKey, int iLen, int &iError)
 {
     iError = GR_OK;
-    uint32 uiKey = this->m_FuncHash(szKey, iLen);
+    uint32 uiKey = 0;
+    char *szTmpKey = szKey;
+    int iTmpLen = iLen;
+    TWEM_HASH_KEY(szTmpKey, iTmpLen);
     return this->m_FuncDispatch(this->m_vServers, this->m_vContinuum, this->ncontinuum, uiKey);
 }
 
 GR_RedisEvent* GR_TwemRoute::Route(GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData, GR_RedisMsg &msg, int &iError)
 {
     iError = GR_OK;
-    uint32 uiKey = this->m_FuncHash(msg.m_Info.szKeyStart, msg.m_Info.iKeyLen);
+    uint32 uiKey = 0;
+    char *szTmpKey = msg.m_Info.szKeyStart;
+    int iTmpLen = msg.m_Info.iKeyLen;
+    if (this->m_bHasHashTag) 
+    {
+        char *szTagStart = nullptr;
+        char *szTagEnd = nullptr;
+        szTagStart = gr_strchr(szTmpKey, szTmpKey+iTmpLen, this->m_cLeftTag);
+        if (szTagStart != nullptr)
+        {
+            szTagEnd = gr_strchr(szTagStart+1, szTmpKey+iTmpLen, this->m_cRightTag);
+            if (szTagEnd != nullptr && szTagEnd - szTagStart > 1)
+            {
+                szTmpKey = szTagStart + 1;
+                iTmpLen = szTagEnd - szTmpKey;
+            }
+        }
+    }
+    uiKey = this->m_FuncHash(szTmpKey, iTmpLen);
     return this->m_FuncDispatch(this->m_vServers, this->m_vContinuum, this->ncontinuum, uiKey);
 }
 

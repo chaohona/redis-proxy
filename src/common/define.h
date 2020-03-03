@@ -88,6 +88,7 @@ enum{
     REDIS_RSP_SYNTAX,               // 语法错误
     REDIS_RSP_MOVED,                // 重定向错误
     REDIS_REQ_ASK,
+    REDIS_REQ_TO_LARGE,
     REDIS_ERR_END
 }GR_STR_RSP;
 
@@ -98,6 +99,7 @@ enum{
 #define REDIS_RSP_DISCONNECT_DESC       "-redis disconnect\r\n"
 #define REDIS_RSP_UNSPPORT_CMD_DESC     "-ERR unspport command\r\n"
 #define REDIS_RSP_SYNTAX_DESC           "-ERR syntax error\r\n"
+#define REDIS_REQ_TO_LARGE_DESC         "-ERR request is too large\r\n"
 #define REDIS_REQ_ASK_DESC              "*1\r\n$6\r\nASKING\r\n"
 
 
@@ -125,10 +127,11 @@ typedef int ERR;     /* error type */
 
 // TODO 命名改下，改为REDIS_ROUTE_TYPE
 enum GR_REDIS_ROUTE_TYPE{
-    PROXY_ROUTE_DEFAULT,
+    PROXY_ROUTE_INVALID,
     PROXY_ROUTE_TWEM,
     PROXY_ROUTE_CODIS,
     PROXY_ROUTE_CLUSTER,
+    PROXY_ROUTE_TINY,
 };
 
 enum GR_REDIS_TYPE{
@@ -160,5 +163,13 @@ enum GR_SLOT_FLAG{
 
 typedef pid_t       GR_Pid;
 #define GR_INVALID_PID  -1
+
+#define GR_CLUSTER_SLOTS_MIX_CASE 3
+#define GR_MAX_GROUPS  256    // 最多可以同时管理256个集群
+
+struct continuum {
+    uint32 index;  /* server index */
+    uint32 value;  /* hash value */
+};
 
 #endif

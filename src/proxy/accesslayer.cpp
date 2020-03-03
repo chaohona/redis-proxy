@@ -4,6 +4,8 @@
 #include "proxy.h"
 #include "gr_proxy_global.h"
 #include "event.h"
+#include "gr_tiny.h"
+#include "gr_clusterroute.h"
 
 GR_AccessEvent::GR_AccessEvent(int iFD, sockaddr & sa, socklen_t &salen, GR_AccessMgr* pMgr)
 {
@@ -83,6 +85,11 @@ int GR_AccessEvent::DoReply(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty)
     if (global_process_msg_num % 10000 == 0)
     {
         GR_LOGD("process msg num %ld", global_process_msg_num);
+    }
+    pIdenty->iGotNum += 1;
+    if (pIdenty->iNeedWaitNum > 1 && pIdenty->iGotNum < pIdenty->iNeedWaitNum)
+    {
+        return GR_OK;
     }
     int iIndex = pIdenty->ulIndex % MAX_WAIT_RING_LEN;
     pIdenty->iWaitDone = 1;
@@ -254,7 +261,6 @@ int GR_AccessEvent::Read()
     int iLeft = 0;
     int iRet = 0;
     int iProcNum = 0;
-    GR_RedisMsg *pTmp = nullptr;
     do{
         // iLeft = m_ReadCache.LeftCapcityToEnd();
         iLeft = m_ReadCache.m_pData->m_uszEnd - m_ReadCache.m_szMsgEnd;
@@ -336,11 +342,13 @@ int GR_AccessEvent::Read()
     return GR_OK;
 }
 
-int GR_AccessEvent::ProcessMsg(int &iNum)
+int GR_AccessEvent::ProcessMsg(int &iMsgNum)
 {
-    GR_MsgIdenty *pIdenty;
+    GR_MsgIdenty *pIdenty = nullptr;
     int iParseRet = 0;
     int iRet = 0;
+    GR_RedisEvent *pRedisEvent = nullptr;
+    GR_MemPoolData  *pSendData = nullptr;
     for (;;)
     {
         if (RINGBUFFER_POOLFULL(this->m_pWaitRing))
@@ -349,9 +357,7 @@ int GR_AccessEvent::ProcessMsg(int &iNum)
             // TODO 告警
             //ASSERT(false);
             GR_LOGE("wait for response pool is full, fd %d, addr %s:%d", this->m_iFD, this->m_szAddr, this->m_uiPort);
-            this->Close();
-            
-            return GR_ERROR;
+            return GR_FULL;
         }
         // 解析消息
         iParseRet = this->m_ReadMsg.ParseRsp();
@@ -366,8 +372,9 @@ int GR_AccessEvent::ProcessMsg(int &iNum)
         {
             break;
         }
+        this->m_ReadCache.m_pData->m_sUsedSize = this->m_ReadMsg.m_Info.iLen;
         
-        iNum+=1;
+        iMsgNum+=1;
         // GR_LOGD("got a message from client:%s", this->m_ReadMsg.szStart);
         // 将消息放入等待列表
         pIdenty = GR_MSGIDENTY_POOL()->Get();
@@ -388,50 +395,109 @@ int GR_AccessEvent::ProcessMsg(int &iNum)
             return GR_ERROR;
         }
         pIdenty->iWaitRsp = 1;
-        // 如果没有key则不转发, 消息总长度不能超过2M
-        if (this->m_ReadMsg.m_Info.iKeyLen == 0 || this->m_ReadMsg.m_Info.iLen > 2*1024*1024)
+        // 过滤不支持命令
+        if (GR_NOT_SRPPORT_CMD(this->m_ReadMsg.m_Info))
         {
-            // 如果是ping则回复pong
-            if (m_ReadMsg.m_Info.iCmdLen == 4 && str4icmp(m_ReadMsg.m_Info.szCmd, 'p', 'i', 'n', 'g'))
+            this->GetReply(REDIS_RSP_UNSPPORT_CMD, pIdenty);
+            this->StartNext();// 没有缓存请求，直接释放请求的内存
+            continue;
+        }
+        // 如果没有key则不转发, 消息总长度不能超过配置长度
+        GR_Config* pConfig = &GR_PROXY_INSTANCE()->m_Config;
+        if (this->m_ReadMsg.m_Info.iKeyLen == 0 || this->m_ReadMsg.m_Info.iLen > pConfig->m_lLongestReq)
+        {
+            if (this->m_ReadMsg.m_Info.iLen > pConfig->m_lLongestReq)
+            {
+                this->GetReply(REDIS_REQ_TO_LARGE, pIdenty);
+                this->StartNext();// 没有缓存请求，直接释放请求的内存
+                continue;
+            }
+            else if (m_ReadMsg.m_Info.iCmdLen == 4 && str4icmp(m_ReadMsg.m_Info.szCmd, 'p', 'i', 'n', 'g')) // 如果是ping则回复pong
             {
                 this->GetReply(REDIS_RSP_PONG, pIdenty);
                 this->StartNext(); // 没有缓存请求，直接释放请求的内存
                 continue;
             }
-            this->GetReply(REDIS_RSP_UNSPPORT_CMD, pIdenty);
-            this->StartNext();// 没有缓存请求，直接释放请求的内存
-            continue;
-        }
-        // 处理集群命令
-        if (this->m_ReadMsg.m_Info.iCmdLen == 7 && IS_CLUSTER_CMD(m_ReadMsg.m_Info.szCmd))
-        {
-            if (!IF_CLUSTER_SUPPORT_CMD(m_ReadMsg.m_Info))
+            else if (IS_RESET(m_ReadMsg.m_Info)) // reset命令
+            {
+            }
+            else
             {
                 this->GetReply(REDIS_RSP_UNSPPORT_CMD, pIdenty);
                 this->StartNext();// 没有缓存请求，直接释放请求的内存
                 continue;
             }
-            if (IS_CLUSTER_SLOTS(m_ReadMsg.m_Info))
+        }
+        pSendData = this->m_ReadCache.m_pData;
+        switch (GR_Proxy::m_pInstance->m_iRouteMode)
+        {
+            case PROXY_ROUTE_CLUSTER:
             {
-                // 组织cluster slots返回值
-                GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
-                auto pData = GR_MsgProcess::Instance()->CLusterSlots((char*)pConfig->m_strIP.c_str(), pConfig->m_usPort);
-                if (pData == nullptr)
+                // 处理集群命令
+                if (this->m_ReadMsg.m_Info.iCmdLen == 7 && IS_CLUSTER_CMD(m_ReadMsg.m_Info.szCmd))
                 {
-                    this->GetReply(REDIS_RSP_UNSPPORT_CMD, pIdenty);
+                    if (!IF_CLUSTER_SUPPORT_CMD(m_ReadMsg.m_Info))
+                    {
+                        this->GetReply(REDIS_RSP_UNSPPORT_CMD, pIdenty);
+                        this->StartNext();// 没有缓存请求，直接释放请求的内存
+                        continue;
+                    }
+                    if (IS_CLUSTER_SLOTS(m_ReadMsg.m_Info))
+                    {
+                        // 组织cluster slots返回值
+                        GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+                        auto pData = GR_MsgProcess::Instance()->ClusterSlots((char*)pConfig->m_strIP.c_str(), pConfig->m_usPort);
+                        if (pData == nullptr)
+                        {
+                            this->GetReply(REDIS_RSP_UNSPPORT_CMD, pIdenty);
+                        }
+                        else
+                        {
+                            this->GetReply(pData, pIdenty);
+                        }
+                        
+                        this->StartNext();// 没有缓存请求，直接释放请求的内存
+                        continue;
+                    }
                 }
-                else
+                break;
+            }
+            case PROXY_ROUTE_TINY:
+            {
+                // 处理tiny命令
+                // 如果传入clear命令，则将后端redis的数据都清除
+                if (IS_RESET(m_ReadMsg.m_Info))
                 {
-                    this->GetReply(pData, pIdenty);
+                    // 将命令替换为 flushdb
+                    pIdenty->iBroadcast = 1;
+                    pSendData = GR_MsgProcess::Instance()->FlushdbCmd();
                 }
-                
-                this->StartNext();// 没有缓存请求，直接释放请求的内存
-                continue;
+                break;
             }
         }
 
         // 将消息发送给后端redis
-        iRet = GR_REDISMSG_INSTANCE()->TransferMsgToRedis(this, pIdenty);
+        //iRet = GR_REDISMSG_INSTANCE()->TransferMsgToRedis(this, pIdenty);
+        //GR_ROUTE(this->m_pRoute, pRedisEvent, pIdenty, this->m_ReadCache.m_pData, this->m_ReadMsg, iRet);
+        if (pIdenty->iBroadcast == 0) // 不是广播消息
+        {
+            pRedisEvent = this->m_pRoute->Route(pIdenty, pSendData, this->m_ReadMsg, iRet);
+            if (pRedisEvent == nullptr || pRedisEvent->m_iFD <= 0)
+            {
+                // TODO 先放缓冲池中，等redis连接上之后发送给redis
+                GR_LOGE("transfer message get redis failed");
+                iRet = REDIS_RSP_DISCONNECT;
+            }
+            else
+            {
+                iRet = pRedisEvent->SendMsg(pSendData, pIdenty);
+            }
+        }
+        else
+        {
+            iRet = this->m_pRoute->Broadcast(this, pIdenty, pSendData);
+        }
+
         if (GR_OK != iRet)
         {
             // TODO 和后端redis连接有问题的处理
@@ -439,7 +505,8 @@ int GR_AccessEvent::ProcessMsg(int &iNum)
             if (iRet == GR_FULL)
             {
                 GR_LOGE("redis is busy %s:%d", this->m_szAddr, this->m_uiPort);
-                GR_Proxy::Instance()->m_AccessMgr.AddPendingEvent(this);
+                //GR_Proxy::Instance()->m_AccessMgr.AddPendingEvent(this);
+                this->m_pRoute->m_pAccessMgr->AddPendingEvent(this);
                 return iRet;
             }
             // 2、如果是出错了，则返回错误
@@ -537,8 +604,7 @@ int GR_AccessEvent::ReInit()
         if (GR_OK != this->m_ReadMsg.ReInit(this->m_ReadCache.m_pData->m_uszData))
         {
             return GR_ERROR;
-        }
-
+        }
         ASSERT(this->m_pWaitRing != nullptr);
         if (GR_OK != this->m_pWaitRing->ReInit())
         {
@@ -608,10 +674,11 @@ GR_AccessMgr::~GR_AccessMgr()
     }
 }
 
-int GR_AccessMgr::Init()
+int GR_AccessMgr::Init(GR_Route *pRoute)
 {
     try
     {
+        this->m_pRoute = pRoute;
         // 启动监听端口
         GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
         // 如果是按服务类型来做负载均衡，则子进程不监听客户端连接
@@ -651,6 +718,7 @@ GR_Event* GR_AccessMgr::CreateClientEvent(int iFD, sockaddr &sa, socklen_t salen
             return nullptr;
         }
         pEvent->m_ulIdx = ++this->m_ulAccessIdx;
+        pEvent->m_pRoute = this->m_pRoute;
         m_mapAccess[pEvent->m_ulIdx] = pEvent;
     }
     catch(exception &e)
@@ -866,29 +934,4 @@ int GR_AccessMgr::LoopCheck()
 
 
 ////////////////////////////////////////////////////////////////////
-GR_AccessMgrList* GR_AccessMgrList::m_pInstance = new GR_AccessMgrList();
-
-GR_AccessMgrList::GR_AccessMgrList()
-{
-}
-
-GR_AccessMgrList::~GR_AccessMgrList()
-{
-}
-
-int GR_AccessMgrList::Init()
-{
-    try
-    {
-        this->m_vAccessMgrList = new GR_AccessMgr[GR_MAX_LISTENS];
-
-        
-        return GR_OK;
-    }
-    catch(exception &e)
-    {
-        GR_LOGE("init GR_AccessMgrList got exception:%s", e.what());
-        return GR_ERROR;
-    }
-}
 

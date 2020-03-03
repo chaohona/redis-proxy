@@ -76,9 +76,9 @@ int GR_Config::Load(char* szCfgPath)
                 {
                     this->m_iRouteMode = PROXY_ROUTE_CLUSTER;
                 }
-                else if (content == "default")
+                else if (content == "tiny")
                 {
-                    this->m_iRouteMode = PROXY_ROUTE_DEFAULT;
+                    this->m_iRouteMode = PROXY_ROUTE_TINY;
                 }
                 else
                 {
@@ -259,6 +259,33 @@ int GR_Config::Load(char* szCfgPath)
                     this->m_iRedisRspTT = 10;
                 }
                 cout << "redis response time out ms:" << this->m_iRedisRspTT << endl;
+            }
+            else if (content == "support-cluster-slots")
+            {
+                this->m_bSupportClusterSlots = c->second.as<bool>();
+                if (this->m_bSupportClusterSlots)
+                {
+                    cout << "redis proxy support cluster nodes command" << endl;
+                }
+            }
+            else if (content == "longest-requst")
+            {
+                // 配置区间在1k-10M之间
+                int64 lConfig = c->second.as<int>();
+                if (lConfig < 1)
+                {
+                    lConfig = 1;
+                }
+                if (lConfig > 10 * 1024)
+                {
+                    lConfig = 10*1024;
+                }
+                this->m_lLongestReq = lConfig*1024;
+                cout << "longest requst is:"<< this->m_lLongestReq << endl;
+            }
+            else if (content == "tiny-conf")
+            {
+                this->m_strTinyConfig = c->second.as<string>();
             }
         }
 

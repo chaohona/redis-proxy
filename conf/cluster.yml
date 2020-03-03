@@ -1,0 +1,6 @@
+cluster1:
+  listen: 127.0.0.1:6379
+  seed_redis: 192.168.12.42:10001
+cluster2:
+  listen: 127.0.0.1:6380
+  seed_redis: 10.254.10.12:20001

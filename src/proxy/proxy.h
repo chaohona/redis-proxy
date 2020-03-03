@@ -12,6 +12,14 @@
 #define GR_PROXY_INSTANCE()\
 GR_Proxy::m_pInstance
 
+
+#define GR_IS_CLUSTER_MODE()\
+(GR_Proxy::m_pInstance->m_iRouteMode == PROXY_ROUTE_CLUSTER)
+
+#define GR_IS_TINY_MODE()\
+(GR_Proxy::m_pInstance->m_iRouteMode == PROXY_ROUTE_TINY)
+
+
 // 代理进程信息管理
 class GR_Proxy
 {
