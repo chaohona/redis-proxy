@@ -7,7 +7,7 @@
 
 支持Redis虚拟化，一个Redis进程支持上千个使用实例。
 
-[测试工程](http://gitlab.ztgame.com/qaDev/gredis_test)
+[测试工报告](https://github.com/chaohona/redis-proxy/blob/master/documents/%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A.md)
 
 
 怎么使用 <br/>
