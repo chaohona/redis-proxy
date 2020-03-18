@@ -32,7 +32,6 @@ public:
     static GR_RedisMgr  *m_pInstance;
 private:
     GR_RedisMgr();
-    int TwemConnectToRedis();
 
     int                 m_iConnectedNum;    // 已经连接上的redis总数
     GR_RedisEvent       *m_pTempRedis;

@@ -24,7 +24,7 @@ public:
     GR_TwemRoute();
     virtual ~GR_TwemRoute();
 
-    virtual int Init(GR_Config *pConfig);
+    virtual int Init(string &strGroup, YAML::Node& node);
 
     virtual GR_RedisEvent* Route(char *szKey, int iLen, int &iError);
     virtual GR_RedisEvent* Route(GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData, GR_RedisMsg &msg, int &iError);
@@ -39,6 +39,7 @@ private:
     int ParseYamlSentinelInfo(YAML::Node &&node);
     int AddSentinel(string &&strSentinelInfo);
     int AddSentinelRedis(string &&strRedis);
+    int ConnectToRedis();
 private:
     string m_strListen = "0.0.0.0:6379";
     string m_strHash = GR_TWEM_DEFAULT_HASH;
@@ -56,5 +57,15 @@ private:
     continuum   *m_vContinuum;
     int         ncontinuum;
 };
+
+class GR_TwemRouteGroup: public GR_RouteGroup
+{
+public:
+    GR_TwemRouteGroup();
+    virtual ~GR_TwemRouteGroup();
+
+    virtual int Init(GR_Config *pConfig);
+};
+
 
 #endif

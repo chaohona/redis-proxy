@@ -10,7 +10,7 @@
 #include "rocksdb/slice.h"
 #include "table/internal_iterator.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Iterator over a vector of keys/values
 class VectorIterator : public InternalIterator {
@@ -98,4 +98,4 @@ class VectorIterator : public InternalIterator {
   size_t current_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

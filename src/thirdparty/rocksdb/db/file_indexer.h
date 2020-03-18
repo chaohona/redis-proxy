@@ -16,7 +16,7 @@
 #include "port/port.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Comparator;
 struct FileMetaData;
@@ -60,7 +60,7 @@ class FileIndexer {
 
   enum {
     // MSVC version 1800 still does not have constexpr for ::max()
-    kLevelMaxIndex = ROCKSDB_NAMESPACE::port::kMaxInt32
+    kLevelMaxIndex = rocksdb::port::kMaxInt32
   };
 
  private:
@@ -139,4 +139,4 @@ class FileIndexer {
   int32_t* level_rb_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

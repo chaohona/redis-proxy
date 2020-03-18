@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 HistogramWindowingImpl::HistogramWindowingImpl() {
   env_ = Env::Default();
@@ -199,4 +199,4 @@ void HistogramWindowingImpl::SwapHistoryBucket() {
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

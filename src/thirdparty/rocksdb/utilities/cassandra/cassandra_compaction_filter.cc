@@ -8,7 +8,8 @@
 #include "rocksdb/slice.h"
 #include "utilities/cassandra/format.h"
 
-namespace ROCKSDB_NAMESPACE {
+
+namespace rocksdb {
 namespace cassandra {
 
 const char* CassandraCompactionFilter::Name() const {
@@ -44,4 +45,4 @@ CompactionFilter::Decision CassandraCompactionFilter::FilterV2(
 }
 
 }  // namespace cassandra
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

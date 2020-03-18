@@ -11,21 +11,19 @@
 
 #include <jni.h>
 
-#include "rocksdb/rocksdb_namespace.h"
+namespace rocksdb {
+  class JniCallback {
+   public:
+    JniCallback(JNIEnv* env, jobject jcallback_obj);
+    virtual ~JniCallback();
 
-namespace ROCKSDB_NAMESPACE {
-class JniCallback {
- public:
-  JniCallback(JNIEnv* env, jobject jcallback_obj);
-  virtual ~JniCallback();
-
- protected:
-  JavaVM* m_jvm;
-  jobject m_jcallback_obj;
-  JNIEnv* getJniEnv(jboolean* attached) const;
-  void releaseJniEnv(jboolean& attached) const;
+   protected:
+    JavaVM* m_jvm;
+    jobject m_jcallback_obj;
+    JNIEnv* getJniEnv(jboolean* attached) const;
+    void releaseJniEnv(jboolean& attached) const;
   };
-  }  // namespace ROCKSDB_NAMESPACE
+}
 
 // @lint-ignore TXT4 T25377293 Grandfathered in
 #endif  // JAVA_ROCKSJNI_JNICALLBACK_H_

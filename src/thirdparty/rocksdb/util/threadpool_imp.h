@@ -14,7 +14,8 @@
 #include <memory>
 #include <functional>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
+
 
 class ThreadPoolImpl : public ThreadPool {
  public:
@@ -109,4 +110,4 @@ class ThreadPoolImpl : public ThreadPool {
    std::unique_ptr<Impl>   impl_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -16,8 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DBOptionsTest {
 
   @ClassRule
-  public static final RocksNativeLibraryResource ROCKS_NATIVE_LIBRARY_RESOURCE =
-      new RocksNativeLibraryResource();
+  public static final RocksMemoryResource rocksMemoryResource =
+      new RocksMemoryResource();
 
   public static final Random rand = PlatformRandomHelper.
       getPlatformSpecificRandomFactory();
@@ -27,7 +27,7 @@ public class DBOptionsTest {
     DBOptions origOpts = new DBOptions();
     origOpts.setCreateIfMissing(rand.nextBoolean());
     origOpts.setAllow2pc(rand.nextBoolean());
-    origOpts.setMaxBackgroundJobs(rand.nextInt(10));
+    origOpts.setBaseBackgroundCompactions(rand.nextInt(10));
     DBOptions copyOpts = new DBOptions(origOpts);
     assertThat(origOpts.createIfMissing()).isEqualTo(copyOpts.createIfMissing());
     assertThat(origOpts.allow2pc()).isEqualTo(copyOpts.allow2pc());
@@ -215,7 +215,6 @@ public class DBOptionsTest {
     }
   }
 
-  @SuppressWarnings("deprecated")
   @Test
   public void baseBackgroundCompactions() {
     try (final DBOptions opt = new DBOptions()) {
@@ -226,7 +225,6 @@ public class DBOptionsTest {
     }
   }
 
-  @SuppressWarnings("deprecated")
   @Test
   public void maxBackgroundCompactions() {
     try(final DBOptions opt = new DBOptions()) {
@@ -246,7 +244,6 @@ public class DBOptionsTest {
     }
   }
 
-  @SuppressWarnings("deprecated")
   @Test
   public void maxBackgroundFlushes() {
     try(final DBOptions opt = new DBOptions()) {

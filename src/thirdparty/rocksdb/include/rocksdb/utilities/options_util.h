@@ -16,7 +16,7 @@
 #include "rocksdb/options.h"
 #include "rocksdb/status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // Constructs the DBOptions and ColumnFamilyDescriptors by loading the
 // latest RocksDB options file stored in the specified rocksdb database.
 //
@@ -98,5 +98,5 @@ Status CheckOptionsCompatibility(
     const std::vector<ColumnFamilyDescriptor>& cf_descs,
     bool ignore_unknown_options = false);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

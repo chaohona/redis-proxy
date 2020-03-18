@@ -14,10 +14,9 @@
 #include "db/compaction/compaction.h"
 #include "db/error_handler.h"
 #include "file/delete_scheduler.h"
-#include "rocksdb/file_system.h"
 #include "rocksdb/sst_file_manager.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Env;
 class Logger;
@@ -27,8 +26,7 @@ class Logger;
 // All SstFileManager public functions are thread-safe.
 class SstFileManagerImpl : public SstFileManager {
  public:
-  explicit SstFileManagerImpl(Env* env, std::shared_ptr<FileSystem> fs,
-                              std::shared_ptr<Logger> logger,
+  explicit SstFileManagerImpl(Env* env, std::shared_ptr<Logger> logger,
                               int64_t rate_bytes_per_sec,
                               double max_trash_db_ratio,
                               uint64_t bytes_max_delete_chunk);
@@ -37,11 +35,6 @@ class SstFileManagerImpl : public SstFileManager {
 
   // DB will call OnAddFile whenever a new sst file is added.
   Status OnAddFile(const std::string& file_path, bool compaction = false);
-
-  // Overload where size of the file is provided by the caller rather than
-  // queried from the filesystem. This is an optimization.
-  Status OnAddFile(const std::string& file_path, uint64_t file_size,
-                   bool compaction);
 
   // DB will call OnDeleteFile whenever an sst file is deleted.
   Status OnDeleteFile(const std::string& file_path);
@@ -148,7 +141,6 @@ class SstFileManagerImpl : public SstFileManager {
   }
 
   Env* env_;
-  std::shared_ptr<FileSystem> fs_;
   std::shared_ptr<Logger> logger_;
   // Mutex to protect tracked_files_, total_files_size_
   port::Mutex mu_;
@@ -192,6 +184,6 @@ class SstFileManagerImpl : public SstFileManager {
   ErrorHandler* cur_instance_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

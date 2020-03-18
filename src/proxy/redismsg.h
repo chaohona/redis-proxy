@@ -22,6 +22,7 @@ class GR_Event;
 #define SYMBOL_COLON    ':'
 #define SYMBOL_PING_S     'p' //PING\r\n
 #define SYMBOL_PING_B     'P' //PING\r\n
+#define SYMBOL_NULL    '\0'
 
 
 // lua脚本，EVAL格式SCRIPT
@@ -342,5 +343,6 @@ str6icmp(m, 's', 'e', 'l', 'e', 'c', 't')
 #define IS_RESET(info)\
 (info.iCmdLen==7 && str7icmp(info.szCmd, '_', 'r', 'e', 's', 'e', 't', '_'))
 
-
+#define IS_TIMEFLAG(info)\
+(info.iCmdLen==8 && str8icmp(info.szCmd, 't', 'i', 'm', 'e', 'f', 'l', 'a', 'g'))
 #endif

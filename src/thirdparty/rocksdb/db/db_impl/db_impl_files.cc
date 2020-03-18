@@ -17,7 +17,7 @@
 #include "file/sst_file_manager_impl.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 uint64_t DBImpl::MinLogNumberToKeep() {
   if (allow_2pc()) {
@@ -618,9 +618,9 @@ uint64_t PrecomputeMinLogNumberToKeep(
   // family being flushed (`cfd_to_flush`).
   uint64_t cf_min_log_number_to_keep = 0;
   for (auto& e : edit_list) {
-    if (e->HasLogNumber()) {
+    if (e->has_log_number()) {
       cf_min_log_number_to_keep =
-          std::max(cf_min_log_number_to_keep, e->GetLogNumber());
+          std::max(cf_min_log_number_to_keep, e->log_number());
     }
   }
   if (cf_min_log_number_to_keep == 0) {
@@ -664,4 +664,4 @@ uint64_t PrecomputeMinLogNumberToKeep(
   return min_log_number_to_keep;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

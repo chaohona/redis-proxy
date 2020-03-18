@@ -29,7 +29,7 @@
 #include "table/table_reader.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 bool NewestFirstBySeqNo(FileMetaData* a, FileMetaData* b) {
   if (a->fd.largest_seqno != b->fd.largest_seqno) {
@@ -83,7 +83,7 @@ class VersionBuilder::Rep {
     std::unordered_map<uint64_t, FileMetaData*> added_files;
   };
 
-  const FileOptions& file_options_;
+  const EnvOptions& env_options_;
   Logger* info_log_;
   TableCache* table_cache_;
   VersionStorageInfo* base_vstorage_;
@@ -101,10 +101,9 @@ class VersionBuilder::Rep {
   FileComparator level_nonzero_cmp_;
 
  public:
-  Rep(const FileOptions& file_options, Logger* info_log,
-      TableCache* table_cache,
+  Rep(const EnvOptions& env_options, Logger* info_log, TableCache* table_cache,
       VersionStorageInfo* base_vstorage)
-      : file_options_(file_options),
+      : env_options_(env_options),
         info_log_(info_log),
         table_cache_(table_cache),
         base_vstorage_(base_vstorage),
@@ -290,7 +289,7 @@ class VersionBuilder::Rep {
     }
 
     // Delete files
-    const auto& del = edit->GetDeletedFiles();
+    const VersionEdit::DeletedFileSet& del = edit->GetDeletedFiles();
     for (const auto& del_file : del) {
       const auto level = del_file.first;
       const auto number = del_file.second;
@@ -462,7 +461,7 @@ class VersionBuilder::Rep {
         auto* file_meta = files_meta[file_idx].first;
         int level = files_meta[file_idx].second;
         statuses[file_idx] = table_cache_->FindTable(
-            file_options_, *(base_vstorage_->InternalComparator()),
+            env_options_, *(base_vstorage_->InternalComparator()),
             file_meta->fd, &file_meta->table_reader_handle, prefix_extractor,
             false /*no_io */, true /* record_read_stats */,
             internal_stats->GetFileReadHist(level), false, level,
@@ -501,11 +500,11 @@ class VersionBuilder::Rep {
   }
 };
 
-VersionBuilder::VersionBuilder(const FileOptions& file_options,
+VersionBuilder::VersionBuilder(const EnvOptions& env_options,
                                TableCache* table_cache,
                                VersionStorageInfo* base_vstorage,
                                Logger* info_log)
-    : rep_(new Rep(file_options, info_log, table_cache, base_vstorage)) {}
+    : rep_(new Rep(env_options, info_log, table_cache, base_vstorage)) {}
 
 VersionBuilder::~VersionBuilder() { delete rep_; }
 
@@ -542,4 +541,4 @@ void VersionBuilder::MaybeAddFile(VersionStorageInfo* vstorage, int level,
   rep_->MaybeAddFile(vstorage, level, f);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

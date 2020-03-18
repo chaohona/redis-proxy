@@ -16,7 +16,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class WritableFileWriter;
 
@@ -111,4 +111,4 @@ class Writer {
 };
 
 }  // namespace log
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

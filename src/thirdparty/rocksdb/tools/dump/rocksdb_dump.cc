@@ -37,15 +37,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  ROCKSDB_NAMESPACE::DumpOptions dump_options;
+  rocksdb::DumpOptions dump_options;
   dump_options.db_path = FLAGS_db_path;
   dump_options.dump_location = FLAGS_dump_location;
   dump_options.anonymous = FLAGS_anonymous;
 
-  ROCKSDB_NAMESPACE::Options db_options;
+  rocksdb::Options db_options;
   if (FLAGS_db_options != "") {
-    ROCKSDB_NAMESPACE::Options parsed_options;
-    ROCKSDB_NAMESPACE::Status s = ROCKSDB_NAMESPACE::GetOptionsFromString(
+    rocksdb::Options parsed_options;
+    rocksdb::Status s = rocksdb::GetOptionsFromString(
         db_options, FLAGS_db_options, &parsed_options);
     if (!s.ok()) {
       fprintf(stderr, "Cannot parse provided db_options\n");
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     db_options = parsed_options;
   }
 
-  ROCKSDB_NAMESPACE::DbDumpTool tool;
+  rocksdb::DbDumpTool tool;
   if (!tool.Run(dump_options, db_options)) {
     return 1;
   }

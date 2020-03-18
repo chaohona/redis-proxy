@@ -13,7 +13,7 @@
 #include "test_util/fault_injection_test_env.h"
 #include "test_util/sync_point.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifndef ROCKSDB_LITE
 class DBSecondaryTest : public DBTestBase {
@@ -198,7 +198,7 @@ TEST_F(DBSecondaryTest, OpenAsSecondary) {
 namespace {
 class TraceFileEnv : public EnvWrapper {
  public:
-  explicit TraceFileEnv(Env* _target) : EnvWrapper(_target) {}
+  explicit TraceFileEnv(Env* target) : EnvWrapper(target) {}
   Status NewRandomAccessFile(const std::string& f,
                              std::unique_ptr<RandomAccessFile>* r,
                              const EnvOptions& env_options) override {
@@ -860,10 +860,10 @@ TEST_F(DBSecondaryTest, CheckConsistencyWhenOpen) {
 }
 #endif  //! ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

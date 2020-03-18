@@ -32,7 +32,7 @@ using std::cout;
 using std::endl;
 using std::flush;
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class ObsoleteFilesTest : public DBTestBase {
  public:
@@ -193,7 +193,7 @@ TEST_F(ObsoleteFilesTest, DeleteObsoleteOptionsFile) {
   ASSERT_EQ(2, opts_file_count);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+} //namespace rocksdb
 
 #ifdef ROCKSDB_UNITTESTS_WITH_CUSTOM_OBJECTS_FROM_STATIC_LIBS
 extern "C" {
@@ -204,7 +204,7 @@ void RegisterCustomObjects(int /*argc*/, char** /*argv*/) {}
 #endif  // !ROCKSDB_UNITTESTS_WITH_CUSTOM_OBJECTS_FROM_STATIC_LIBS
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   RegisterCustomObjects(argc, argv);
   return RUN_ALL_TESTS();

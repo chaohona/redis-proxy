@@ -12,7 +12,7 @@
 #include "rocksdb/db.h"
 #include "rocksdb/utilities/stackable_db.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Database with TTL support.
 //
@@ -68,5 +68,5 @@ class DBWithTTL : public StackableDB {
   explicit DBWithTTL(DB* db) : StackableDB(db) {}
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LITE

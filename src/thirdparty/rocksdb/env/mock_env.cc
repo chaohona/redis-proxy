@@ -16,7 +16,7 @@
 #include "util/random.h"
 #include "util/rate_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class MemFile {
  public:
@@ -587,7 +587,6 @@ Status MockEnv::Truncate(const std::string& fname, size_t size) {
 
 Status MockEnv::CreateDir(const std::string& dirname) {
   auto dn = NormalizePath(dirname);
-  MutexLock lock(&mutex_);
   if (file_map_.find(dn) == file_map_.end()) {
     MemFile* file = new MemFile(this, dn, false);
     file->Ref();
@@ -772,4 +771,4 @@ Env* NewMemEnv(Env* /*base_env*/) { return nullptr; }
 
 #endif  // !ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

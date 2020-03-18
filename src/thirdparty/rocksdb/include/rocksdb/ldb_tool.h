@@ -9,7 +9,7 @@
 #include "rocksdb/db.h"
 #include "rocksdb/options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // An interface for converting a slice to a readable string
 class SliceFormatter {
@@ -38,6 +38,6 @@ class LDBTool {
       const std::vector<ColumnFamilyDescriptor>* column_families = nullptr);
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

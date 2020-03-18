@@ -11,9 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "rocksdb/rocksdb_namespace.h"
-
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Slice;
 
@@ -135,4 +133,4 @@ bool SerializeIntVector(const std::vector<int>& vec, std::string* value);
 
 extern const std::string kNullptrString;
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

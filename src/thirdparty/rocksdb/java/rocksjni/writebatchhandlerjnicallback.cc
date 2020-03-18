@@ -4,12 +4,12 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the callback "bridge" between Java and C++ for
-// ROCKSDB_NAMESPACE::Comparator.
+// rocksdb::Comparator.
 
 #include "rocksjni/writebatchhandlerjnicallback.h"
 #include "rocksjni/portal.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 WriteBatchHandlerJniCallback::WriteBatchHandlerJniCallback(
     JNIEnv* env, jobject jWriteBatchHandler)
     : JniCallback(env, jWriteBatchHandler), m_env(env) {
@@ -128,8 +128,8 @@ WriteBatchHandlerJniCallback::WriteBatchHandlerJniCallback(
   }
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::PutCF(
-    uint32_t column_family_id, const Slice& key, const Slice& value) {
+rocksdb::Status WriteBatchHandlerJniCallback::PutCF(uint32_t column_family_id,
+    const Slice& key, const Slice& value) {
   auto put = [this, column_family_id] (
       jbyteArray j_key, jbyteArray j_value) {
     m_env->CallVoidMethod(
@@ -141,11 +141,9 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::PutCF(
   };
   auto status = WriteBatchHandlerJniCallback::kv_op(key, value, put);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
@@ -161,8 +159,8 @@ void WriteBatchHandlerJniCallback::Put(const Slice& key, const Slice& value) {
   WriteBatchHandlerJniCallback::kv_op(key, value, put);
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MergeCF(
-    uint32_t column_family_id, const Slice& key, const Slice& value) {
+rocksdb::Status WriteBatchHandlerJniCallback::MergeCF(uint32_t column_family_id,
+    const Slice& key, const Slice& value) {
   auto merge = [this, column_family_id] (
         jbyteArray j_key, jbyteArray j_value) {
     m_env->CallVoidMethod(
@@ -174,11 +172,9 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MergeCF(
   };
   auto status = WriteBatchHandlerJniCallback::kv_op(key, value, merge);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
@@ -194,8 +190,8 @@ void WriteBatchHandlerJniCallback::Merge(const Slice& key, const Slice& value) {
   WriteBatchHandlerJniCallback::kv_op(key, value, merge);
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::DeleteCF(
-    uint32_t column_family_id, const Slice& key) {
+rocksdb::Status WriteBatchHandlerJniCallback::DeleteCF(uint32_t column_family_id,
+    const Slice& key) {
   auto remove = [this, column_family_id] (jbyteArray j_key) {
     m_env->CallVoidMethod(
       m_jcallback_obj,
@@ -205,11 +201,9 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::DeleteCF(
   };
   auto status = WriteBatchHandlerJniCallback::k_op(key, remove);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
@@ -223,8 +217,8 @@ void WriteBatchHandlerJniCallback::Delete(const Slice& key) {
   WriteBatchHandlerJniCallback::k_op(key, remove);
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::SingleDeleteCF(
-    uint32_t column_family_id, const Slice& key) {
+rocksdb::Status WriteBatchHandlerJniCallback::SingleDeleteCF(uint32_t column_family_id,
+    const Slice& key) {
   auto singleDelete = [this, column_family_id] (jbyteArray j_key) {
     m_env->CallVoidMethod(
       m_jcallback_obj,
@@ -234,11 +228,9 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::SingleDeleteCF(
   };
   auto status = WriteBatchHandlerJniCallback::k_op(key, singleDelete);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
@@ -252,8 +244,8 @@ void WriteBatchHandlerJniCallback::SingleDelete(const Slice& key) {
   WriteBatchHandlerJniCallback::k_op(key, singleDelete);
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::DeleteRangeCF(
-    uint32_t column_family_id, const Slice& beginKey, const Slice& endKey) {
+rocksdb::Status WriteBatchHandlerJniCallback::DeleteRangeCF(uint32_t column_family_id,
+    const Slice& beginKey, const Slice& endKey) {
   auto deleteRange = [this, column_family_id] (
         jbyteArray j_beginKey, jbyteArray j_endKey) {
     m_env->CallVoidMethod(
@@ -265,11 +257,9 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::DeleteRangeCF(
   };
   auto status = WriteBatchHandlerJniCallback::kv_op(beginKey, endKey, deleteRange);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
@@ -296,8 +286,8 @@ void WriteBatchHandlerJniCallback::LogData(const Slice& blob) {
   WriteBatchHandlerJniCallback::k_op(blob, logData);
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::PutBlobIndexCF(
-    uint32_t column_family_id, const Slice& key, const Slice& value) {
+rocksdb::Status WriteBatchHandlerJniCallback::PutBlobIndexCF(uint32_t column_family_id,
+    const Slice& key, const Slice& value) {
   auto putBlobIndex = [this, column_family_id] (
       jbyteArray j_key, jbyteArray j_value) {
     m_env->CallVoidMethod(
@@ -309,16 +299,13 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::PutBlobIndexCF(
   };
   auto status = WriteBatchHandlerJniCallback::kv_op(key, value, putBlobIndex);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkBeginPrepare(
-    bool unprepare) {
+rocksdb::Status WriteBatchHandlerJniCallback::MarkBeginPrepare(bool unprepare) {
 #ifndef DEBUG
   (void) unprepare;
 #else
@@ -330,25 +317,22 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkBeginPrepare(
   if (m_env->ExceptionCheck()) {
     // exception thrown
     jthrowable exception = m_env->ExceptionOccurred();
-    std::unique_ptr<ROCKSDB_NAMESPACE::Status> status =
-        ROCKSDB_NAMESPACE::RocksDBExceptionJni::toCppStatus(m_env, exception);
+    std::unique_ptr<rocksdb::Status> status = rocksdb::RocksDBExceptionJni::toCppStatus(m_env, exception);
     if (status == nullptr) {
       // unkown status or exception occurred extracting status
       m_env->ExceptionDescribe();
-      return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) probably need a
-                                               // better error code here
+      return rocksdb::Status::OK();  // TODO(AR) probably need a better error code here
 
     } else {
       m_env->ExceptionClear();  // clear the exception, as we have extracted the status
-      return ROCKSDB_NAMESPACE::Status(*status);
+      return rocksdb::Status(*status);
     }
   }
 
-  return ROCKSDB_NAMESPACE::Status::OK();
+  return rocksdb::Status::OK();
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkEndPrepare(
-    const Slice& xid) {
+rocksdb::Status WriteBatchHandlerJniCallback::MarkEndPrepare(const Slice& xid) {
   auto markEndPrepare = [this] (
       jbyteArray j_xid) {
     m_env->CallVoidMethod(
@@ -358,41 +342,35 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkEndPrepare(
   };
   auto status = WriteBatchHandlerJniCallback::k_op(xid, markEndPrepare);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkNoop(
-    bool empty_batch) {
+rocksdb::Status WriteBatchHandlerJniCallback::MarkNoop(bool empty_batch) {
   m_env->CallVoidMethod(m_jcallback_obj, m_jMarkNoopMethodId, static_cast<jboolean>(empty_batch));
 
   // check for Exception, in-particular RocksDBException
   if (m_env->ExceptionCheck()) {
     // exception thrown
     jthrowable exception = m_env->ExceptionOccurred();
-    std::unique_ptr<ROCKSDB_NAMESPACE::Status> status =
-        ROCKSDB_NAMESPACE::RocksDBExceptionJni::toCppStatus(m_env, exception);
+    std::unique_ptr<rocksdb::Status> status = rocksdb::RocksDBExceptionJni::toCppStatus(m_env, exception);
     if (status == nullptr) {
       // unkown status or exception occurred extracting status
       m_env->ExceptionDescribe();
-      return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) probably need a
-                                               // better error code here
+      return rocksdb::Status::OK();  // TODO(AR) probably need a better error code here
 
     } else {
       m_env->ExceptionClear();  // clear the exception, as we have extracted the status
-      return ROCKSDB_NAMESPACE::Status(*status);
+      return rocksdb::Status(*status);
     }
   }
 
-  return ROCKSDB_NAMESPACE::Status::OK();
+  return rocksdb::Status::OK();
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkRollback(
-    const Slice& xid) {
+rocksdb::Status WriteBatchHandlerJniCallback::MarkRollback(const Slice& xid) {
   auto markRollback = [this] (
       jbyteArray j_xid) {
     m_env->CallVoidMethod(
@@ -402,16 +380,13 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkRollback(
   };
   auto status = WriteBatchHandlerJniCallback::k_op(xid, markRollback);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
-ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkCommit(
-    const Slice& xid) {
+rocksdb::Status WriteBatchHandlerJniCallback::MarkCommit(const Slice& xid) {
   auto markCommit = [this] (
       jbyteArray j_xid) {
     m_env->CallVoidMethod(
@@ -421,11 +396,9 @@ ROCKSDB_NAMESPACE::Status WriteBatchHandlerJniCallback::MarkCommit(
   };
   auto status = WriteBatchHandlerJniCallback::k_op(xid, markCommit);
   if(status == nullptr) {
-    return ROCKSDB_NAMESPACE::Status::OK();  // TODO(AR) what to do if there is
-                                             // an Exception but we don't know
-                                             // the ROCKSDB_NAMESPACE::Status?
+    return rocksdb::Status::OK();   // TODO(AR) what to do if there is an Exception but we don't know the rocksdb::Status?
   } else {
-    return ROCKSDB_NAMESPACE::Status(*status);
+    return rocksdb::Status(*status);
   }
 }
 
@@ -441,10 +414,8 @@ bool WriteBatchHandlerJniCallback::Continue() {
   return static_cast<bool>(jContinue == JNI_TRUE);
 }
 
-std::unique_ptr<ROCKSDB_NAMESPACE::Status> WriteBatchHandlerJniCallback::kv_op(
-    const Slice& key, const Slice& value,
-    std::function<void(jbyteArray, jbyteArray)> kvFn) {
-  const jbyteArray j_key = JniUtil::copyBytes(m_env, key);
+std::unique_ptr<rocksdb::Status> WriteBatchHandlerJniCallback::kv_op(const Slice& key, const Slice& value, std::function<void(jbyteArray, jbyteArray)> kvFn) {
+    const jbyteArray j_key = JniUtil::copyBytes(m_env, key);
   if (j_key == nullptr) {
     // exception thrown
     if (m_env->ExceptionCheck()) {
@@ -478,8 +449,7 @@ std::unique_ptr<ROCKSDB_NAMESPACE::Status> WriteBatchHandlerJniCallback::kv_op(
 
     // exception thrown
     jthrowable exception = m_env->ExceptionOccurred();
-    std::unique_ptr<ROCKSDB_NAMESPACE::Status> status =
-        ROCKSDB_NAMESPACE::RocksDBExceptionJni::toCppStatus(m_env, exception);
+    std::unique_ptr<rocksdb::Status> status = rocksdb::RocksDBExceptionJni::toCppStatus(m_env, exception);
     if (status == nullptr) {
       // unkown status or exception occurred extracting status
       m_env->ExceptionDescribe();
@@ -499,13 +469,11 @@ std::unique_ptr<ROCKSDB_NAMESPACE::Status> WriteBatchHandlerJniCallback::kv_op(
   }
 
   // all OK
-  return std::unique_ptr<ROCKSDB_NAMESPACE::Status>(
-      new ROCKSDB_NAMESPACE::Status(ROCKSDB_NAMESPACE::Status::OK()));
+  return std::unique_ptr<rocksdb::Status>(new rocksdb::Status(rocksdb::Status::OK()));
 }
 
-std::unique_ptr<ROCKSDB_NAMESPACE::Status> WriteBatchHandlerJniCallback::k_op(
-    const Slice& key, std::function<void(jbyteArray)> kFn) {
-  const jbyteArray j_key = JniUtil::copyBytes(m_env, key);
+std::unique_ptr<rocksdb::Status> WriteBatchHandlerJniCallback::k_op(const Slice& key, std::function<void(jbyteArray)> kFn) {
+    const jbyteArray j_key = JniUtil::copyBytes(m_env, key);
   if (j_key == nullptr) {
     // exception thrown
     if (m_env->ExceptionCheck()) {
@@ -524,8 +492,7 @@ std::unique_ptr<ROCKSDB_NAMESPACE::Status> WriteBatchHandlerJniCallback::k_op(
 
     // exception thrown
     jthrowable exception = m_env->ExceptionOccurred();
-    std::unique_ptr<ROCKSDB_NAMESPACE::Status> status =
-        ROCKSDB_NAMESPACE::RocksDBExceptionJni::toCppStatus(m_env, exception);
+    std::unique_ptr<rocksdb::Status> status = rocksdb::RocksDBExceptionJni::toCppStatus(m_env, exception);
     if (status == nullptr) {
       // unkown status or exception occurred extracting status
       m_env->ExceptionDescribe();
@@ -542,7 +509,6 @@ std::unique_ptr<ROCKSDB_NAMESPACE::Status> WriteBatchHandlerJniCallback::k_op(
   }
 
   // all OK
-  return std::unique_ptr<ROCKSDB_NAMESPACE::Status>(
-      new ROCKSDB_NAMESPACE::Status(ROCKSDB_NAMESPACE::Status::OK()));
+  return std::unique_ptr<rocksdb::Status>(new rocksdb::Status(rocksdb::Status::OK()));
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

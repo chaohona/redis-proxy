@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SliceTest {
 
   @ClassRule
-  public static final RocksNativeLibraryResource ROCKS_NATIVE_LIBRARY_RESOURCE =
-      new RocksNativeLibraryResource();
+  public static final RocksMemoryResource rocksMemoryResource =
+      new RocksMemoryResource();
 
   @Test
   public void slice() {

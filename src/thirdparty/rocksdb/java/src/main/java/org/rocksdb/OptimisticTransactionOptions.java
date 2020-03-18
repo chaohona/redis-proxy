@@ -6,7 +6,7 @@
 package org.rocksdb;
 
 public class OptimisticTransactionOptions extends RocksObject
-    implements TransactionalOptions<OptimisticTransactionOptions> {
+    implements TransactionalOptions {
 
   public OptimisticTransactionOptions() {
     super(newOptimisticTransactionOptions());
@@ -37,7 +37,7 @@ public class OptimisticTransactionOptions extends RocksObject
    * @return this OptimisticTransactionOptions instance
    */
   public OptimisticTransactionOptions setComparator(
-      final AbstractComparator comparator) {
+      final AbstractComparator<? extends AbstractSlice<?>> comparator) {
     assert(isOwningHandle());
     setComparator(nativeHandle_, comparator.nativeHandle_);
     return this;

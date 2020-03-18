@@ -7,7 +7,7 @@
 
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class MockTimeEnv : public EnvWrapper {
  public:
@@ -42,4 +42,4 @@ class MockTimeEnv : public EnvWrapper {
   std::atomic<uint64_t> current_time_{0};
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

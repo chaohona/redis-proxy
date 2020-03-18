@@ -179,9 +179,11 @@ int GR_RedisEvent::SendMsg(GR_MemPoolData *pData, GR_MsgIdenty *pIdenty)
         ASSERT(false);
         return GR_FULL;
     }
+
     pIdenty->pRedisEvent = this; // 已经将标记放到redis的等待队列了
     int iIdx = this->m_lCiovWriteIdx%MAX_REDIS_MSG_IDENTY_POOL;
     ++this->m_lCiovWriteIdx;
+    ++this->m_ulSendMsgNum;
     ASSERT(this->m_lCiovWriteIdx > this->m_lCiovReadIdx && m_lCiovWriteIdx-m_lCiovReadIdx<=MAX_REDIS_MSG_IDENTY_POOL);
     if (this->m_lCiovWriteIdx > 0xFFFFFFF) // 防止溢出
     {
@@ -310,6 +312,7 @@ int GR_RedisEvent::ProcessMsg(int &iNum)
         {
             break;
         }
+        ++this->m_ulRecvMsgNum;
         iNum += 1;
         // GR_LOGD("got a message from redis:%s", this->m_ReadMsg.szStart);
         // 获取当前消息所属的客户端
@@ -379,10 +382,10 @@ bool GR_RedisEvent::SlotPending(GR_MsgIdenty *pIdenty)
             }
             return false;
         }
-        static GR_RedisMsg g_global_redirect_msg;
         // 如果是重定向消息则重定向
         if (IS_MOVED_REDIRECT(this->m_ReadMsg))
         {
+            GR_RedisMsg g_global_redirect_msg;
             pIdenty->bRedirect = true;
             pIdenty->iMovedTimes += 1;
             if (pIdenty->iMovedTimes > 1)
@@ -390,11 +393,21 @@ bool GR_RedisEvent::SlotPending(GR_MsgIdenty *pIdenty)
                 // TODO 告警，说明此时有元数据状态不一致的情况:系统不应该出现
                 GR_LOGW("moved more than 1 times %d, %d, %s, %d", pIdenty->iSlot, pIdenty->iMovedTimes, this->m_szAddr, 
                     this->m_uiPort);
-                //if (pIdenty->iMovedTimes > 2)
-                //{
-                //    pIdenty->ReplyError(REDIS_RSP_MOVED);
-                //    return true;
-                //}
+                if (pIdenty->iMovedTimes > 1024)
+                {
+                    char szReq[1024];
+                    int iTmpLen = pIdenty->pReqData->m_uszEnd - pIdenty->pReqData->m_uszData;
+                    if (iTmpLen > 1024)
+                    {
+                        iTmpLen = 1024;
+                    }
+                    memcpy(szReq, pIdenty->pReqData->m_uszData, iTmpLen);
+                    szReq[iTmpLen-1] = '\0';
+                    GR_LOGE("moved more than 1024 times, reply error,  %d, %d, %s, %d, req:%s", pIdenty->iSlot, pIdenty->iMovedTimes, this->m_szAddr, 
+                        this->m_uiPort, szReq);
+                    pIdenty->ReplyError(REDIS_RSP_MOVED);
+                    return true;
+                }
             }
             REINIT_REDIRECT_MSG(g_global_redirect_msg);
             if (GR_OK != pRoute->SlotRedirect(pIdenty, g_global_redirect_msg))
@@ -405,6 +418,7 @@ bool GR_RedisEvent::SlotPending(GR_MsgIdenty *pIdenty)
         } 
         else if (IS_ASK_REDIRECT(this->m_ReadMsg))// 如果是ask消息则不更新，但是重新向新的redis发送请求
         {
+            GR_RedisMsg g_global_redirect_msg;
             pIdenty->bRedirect = false;
             pIdenty->iAskTimes += 1;
             if (pIdenty->iAskTimes > 1)

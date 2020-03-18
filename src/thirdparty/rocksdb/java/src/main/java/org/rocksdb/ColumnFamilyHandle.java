@@ -32,7 +32,6 @@ public class ColumnFamilyHandle extends RocksObject {
    * @throws RocksDBException if an error occurs whilst retrieving the name.
    */
   public byte[] getName() throws RocksDBException {
-    assert(isOwningHandle() || isDefaultColumnFamily());
     return getName(nativeHandle_);
   }
 
@@ -42,7 +41,6 @@ public class ColumnFamilyHandle extends RocksObject {
    * @return the ID of the Column Family.
    */
   public int getID() {
-    assert(isOwningHandle() || isDefaultColumnFamily());
     return getID(nativeHandle_);
   }
 
@@ -61,7 +59,7 @@ public class ColumnFamilyHandle extends RocksObject {
    *     descriptor.
    */
   public ColumnFamilyDescriptor getDescriptor() throws RocksDBException {
-    assert(isOwningHandle() || isDefaultColumnFamily());
+    assert(isOwningHandle());
     return getDescriptor(nativeHandle_);
   }
 
@@ -91,10 +89,6 @@ public class ColumnFamilyHandle extends RocksObject {
     } catch (RocksDBException e) {
       throw new RuntimeException("Cannot calculate hash code of column family handle", e);
     }
-  }
-
-  protected boolean isDefaultColumnFamily() {
-    return nativeHandle_ == rocksDB_.getDefaultColumnFamily().nativeHandle_;
   }
 
   /**

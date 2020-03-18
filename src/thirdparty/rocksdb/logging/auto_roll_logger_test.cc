@@ -24,7 +24,7 @@
 #include "test_util/testharness.h"
 #include "test_util/testutil.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace {
 class NoSleepEnv : public EnvWrapper {
  public:
@@ -132,9 +132,6 @@ void AutoRollLoggerTest::RollLogFileBySizeTest(AutoRollLogger* logger,
                                                size_t log_max_size,
                                                const std::string& log_message) {
   logger->SetInfoLogLevel(InfoLogLevel::INFO_LEVEL);
-  ASSERT_EQ(InfoLogLevel::INFO_LEVEL, logger->GetInfoLogLevel());
-  ASSERT_EQ(InfoLogLevel::INFO_LEVEL,
-            logger->TEST_inner_logger()->GetInfoLogLevel());
   // measure the size of each message, which is supposed
   // to be equal or greater than log_message.size()
   LogMessage(logger, log_message.c_str());
@@ -222,25 +219,6 @@ TEST_F(AutoRollLoggerTest, RollLogFileByTime) {
 
   RollLogFileByTimeTest(&nse, &logger, time,
                         kSampleMessage + ":RollLogFileByTime");
-}
-
-TEST_F(AutoRollLoggerTest, SetInfoLogLevel) {
-  InitTestDb();
-  Options options;
-  options.info_log_level = InfoLogLevel::FATAL_LEVEL;
-  options.max_log_file_size = 1024;
-  std::shared_ptr<Logger> logger;
-  ASSERT_OK(CreateLoggerFromOptions(kTestDir, options, &logger));
-  auto* auto_roll_logger = dynamic_cast<AutoRollLogger*>(logger.get());
-  ASSERT_NE(nullptr, auto_roll_logger);
-  ASSERT_EQ(InfoLogLevel::FATAL_LEVEL, auto_roll_logger->GetInfoLogLevel());
-  ASSERT_EQ(InfoLogLevel::FATAL_LEVEL,
-            auto_roll_logger->TEST_inner_logger()->GetInfoLogLevel());
-  auto_roll_logger->SetInfoLogLevel(InfoLogLevel::DEBUG_LEVEL);
-  ASSERT_EQ(InfoLogLevel::DEBUG_LEVEL, auto_roll_logger->GetInfoLogLevel());
-  ASSERT_EQ(InfoLogLevel::DEBUG_LEVEL, logger->GetInfoLogLevel());
-  ASSERT_EQ(InfoLogLevel::DEBUG_LEVEL,
-            auto_roll_logger->TEST_inner_logger()->GetInfoLogLevel());
 }
 
 TEST_F(AutoRollLoggerTest, OpenLogFilesMultipleTimesWithOptionLog_max_size) {
@@ -445,7 +423,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
   AutoRollLogger* auto_roll_logger =
       dynamic_cast<AutoRollLogger*>(logger.get());
   ASSERT_TRUE(auto_roll_logger);
-  ROCKSDB_NAMESPACE::port::Thread flush_thread;
+  rocksdb::port::Thread flush_thread;
 
   // Notes:
   // (1) Need to pin the old logger before beginning the roll, as rolling grabs
@@ -456,7 +434,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
   //     logger after auto-roll logger has cut over to a new logger.
   // (3) PosixLogger::Flush() happens in both threads but its SyncPoints only
   //     are enabled in flush_thread (the one pinning the old logger).
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependencyAndMarkers(
+  rocksdb::SyncPoint::GetInstance()->LoadDependencyAndMarkers(
       {{"AutoRollLogger::Flush:PinnedLogger",
         "AutoRollLoggerTest::LogFlushWhileRolling:PreRollAndPostThreadInit"},
        {"PosixLogger::Flush:Begin1",
@@ -465,7 +443,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
         "PosixLogger::Flush:Begin2"}},
       {{"AutoRollLogger::Flush:PinnedLogger", "PosixLogger::Flush:Begin1"},
        {"AutoRollLogger::Flush:PinnedLogger", "PosixLogger::Flush:Begin2"}});
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   flush_thread = port::Thread([&]() { auto_roll_logger->Flush(); });
   TEST_SYNC_POINT(
@@ -473,7 +451,7 @@ TEST_F(AutoRollLoggerTest, LogFlushWhileRolling) {
   RollLogFileBySizeTest(auto_roll_logger, options.max_log_file_size,
                         kSampleMessage + ":LogFlushWhileRolling");
   flush_thread.join();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 #endif  // OS_WIN
@@ -637,8 +615,8 @@ TEST_F(AutoRollLoggerTest, LogHeaderTest) {
 }
 
 TEST_F(AutoRollLoggerTest, LogFileExistence) {
-  ROCKSDB_NAMESPACE::DB* db;
-  ROCKSDB_NAMESPACE::Options options;
+  rocksdb::DB* db;
+  rocksdb::Options options;
 #ifdef OS_WIN
   // Replace all slashes in the path so windows CompSpec does not
   // become confused
@@ -652,7 +630,7 @@ TEST_F(AutoRollLoggerTest, LogFileExistence) {
   ASSERT_EQ(system(deleteCmd.c_str()), 0);
   options.max_log_file_size = 100 * 1024 * 1024;
   options.create_if_missing = true;
-  ASSERT_OK(ROCKSDB_NAMESPACE::DB::Open(options, kTestDir, &db));
+  ASSERT_OK(rocksdb::DB::Open(options, kTestDir, &db));
   ASSERT_OK(default_env->FileExists(kLogFile));
   delete db;
 }
@@ -666,7 +644,7 @@ TEST_F(AutoRollLoggerTest, FileCreateFailure) {
   ASSERT_NOK(CreateLoggerFromOptions("", options, &logger));
   ASSERT_TRUE(!logger);
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -10,7 +10,7 @@
 #include "logging/logging.h"
 #include "util/mutexlock.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifndef ROCKSDB_LITE
 // -- AutoRollLogger
@@ -59,8 +59,6 @@ Status AutoRollLogger::ResetLogger() {
   if (!status_.ok()) {
     return status_;
   }
-  assert(logger_);
-  logger_->SetInfoLogLevel(Logger::GetInfoLogLevel());
 
   if (logger_->GetLogFileSize() == Logger::kDoNotSupportGetLogFileSize) {
     status_ = Status::NotSupported(
@@ -289,4 +287,4 @@ Status CreateLoggerFromOptions(const std::string& dbname,
   return s;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

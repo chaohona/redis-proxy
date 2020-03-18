@@ -11,7 +11,7 @@
 #include "logging/logging.h"
 #include "test_util/testharness.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 static std::string IKey(const std::string& user_key,
                         uint64_t seq,
@@ -199,7 +199,7 @@ TEST_F(FormatTest, RangeTombstoneSerializeEndKey) {
   ASSERT_LT(cmp.Compare(t.SerializeEndKey(), k), 0);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

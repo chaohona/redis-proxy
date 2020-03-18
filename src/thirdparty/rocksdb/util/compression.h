@@ -49,7 +49,7 @@
 #if ZSTD_VERSION_NUMBER >= 10103  // v1.1.3+
 #include <zdict.h>
 #endif  // ZSTD_VERSION_NUMBER >= 10103
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // Need this for the context allocation override
 // On windows we need to do this explicitly
 #if (ZSTD_VERSION_NUMBER >= 500)
@@ -121,11 +121,11 @@ class ZSTDUncompressCachedData {
   int64_t cache_idx_ = -1;  // -1 means this instance owns the context
 };
 #endif  // (ZSTD_VERSION_NUMBER >= 500)
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ZSTD
 
 #if !(defined ZSTD) || !(ZSTD_VERSION_NUMBER >= 500)
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class ZSTDUncompressCachedData {
   void* padding;  // unused
  public:
@@ -144,14 +144,14 @@ class ZSTDUncompressCachedData {
  private:
   void ignore_padding__() { padding = nullptr; }
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif
 
 #if defined(XPRESS)
 #include "port/xpress.h"
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Holds dictionary and related data, like ZSTD's digested compression
 // dictionary.
@@ -563,8 +563,6 @@ inline std::string CompressionTypeToString(CompressionType compression_type) {
       return "ZSTD";
     case kZSTDNotFinalCompression:
       return "ZSTDNotFinal";
-    case kDisableCompressionOption:
-      return "DisableOption";
     default:
       assert(false);
       return "";
@@ -1050,6 +1048,7 @@ inline bool LZ4_Compress(const CompressionInfo& info,
 #else   // up to r123
   outlen = LZ4_compress_limitedOutput(input, &(*output)[output_header_len],
                                       static_cast<int>(length), compress_bound);
+  (void)ctx;
 #endif  // LZ4_VERSION_NUMBER >= 10400
 
   if (outlen == 0) {
@@ -1114,6 +1113,7 @@ inline CacheAllocationPtr LZ4_Uncompress(const UncompressionInfo& info,
   *decompress_size = LZ4_decompress_safe(input_data, output.get(),
                                          static_cast<int>(input_length),
                                          static_cast<int>(output_len));
+  (void)ctx;
 #endif  // LZ4_VERSION_NUMBER >= 10400
 
   if (*decompress_size < 0) {
@@ -1404,4 +1404,4 @@ inline std::string ZSTD_TrainDictionary(const std::string& samples,
 #endif  // ZSTD_VERSION_NUMBER >= 10103
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

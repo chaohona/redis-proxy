@@ -15,7 +15,7 @@
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class DBTestXactLogIterator : public DBTestBase {
  public:
@@ -98,14 +98,14 @@ TEST_F(DBTestXactLogIterator, TransactionLogIteratorRace) {
   for (int test = 0; test < LOG_ITERATOR_RACE_TEST_COUNT; ++test) {
     // Setup sync point dependency to reproduce the race condition of
     // a log file moved to archived dir, in the middle of GetSortedWalFiles
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependency({
-        {sync_points[test][0], sync_points[test][1]},
-        {sync_points[test][2], sync_points[test][3]},
-    });
+    rocksdb::SyncPoint::GetInstance()->LoadDependency(
+      { { sync_points[test][0], sync_points[test][1] },
+        { sync_points[test][2], sync_points[test][3] },
+      });
 
     do {
-      ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearTrace();
-      ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+      rocksdb::SyncPoint::GetInstance()->ClearTrace();
+      rocksdb::SyncPoint::GetInstance()->DisableProcessing();
       Options options = OptionsForLogIterTest();
       DestroyAndReopen(options);
       Put("key1", DummyString(1024));
@@ -123,7 +123,7 @@ TEST_F(DBTestXactLogIterator, TransactionLogIteratorRace) {
         ExpectRecords(4, iter);
       }
 
-      ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+      rocksdb::SyncPoint::GetInstance()->EnableProcessing();
       // trigger async flush, and log move. Well, log move will
       // wait until the GetSortedWalFiles:1 to reproduce the race
       // condition
@@ -185,7 +185,7 @@ TEST_F(DBTestXactLogIterator, TransactionLogIteratorCorruptedLog) {
     dbfull()->Flush(FlushOptions());
     dbfull()->FlushWAL(false);
     // Corrupt this log to create a gap
-    ROCKSDB_NAMESPACE::VectorLogPtr wal_files;
+    rocksdb::VectorLogPtr wal_files;
     ASSERT_OK(dbfull()->GetSortedWalFiles(wal_files));
     const auto logfile_path = dbname_ + "/" + wal_files.front()->PathName();
     if (mem_env_) {
@@ -277,13 +277,13 @@ TEST_F(DBTestXactLogIterator, TransactionLogIteratorBlobs) {
       "Delete(0, key2)",
       handler.seen);
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // !defined(ROCKSDB_LITE)
 
 int main(int argc, char** argv) {
 #if !defined(ROCKSDB_LITE)
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 #else

@@ -8,7 +8,7 @@
 
 #include "utilities/merge_operators/bytesxor.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 std::shared_ptr<MergeOperator> MergeOperators::CreateBytesXOROperator() {
   return std::make_shared<BytesXOROperator>();
@@ -56,4 +56,4 @@ void BytesXOROperator::XOR(const Slice* existing_value,
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

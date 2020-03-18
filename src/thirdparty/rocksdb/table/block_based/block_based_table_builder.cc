@@ -11,6 +11,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+
 #include <list>
 #include <map>
 #include <memory>
@@ -48,7 +49,7 @@
 #include "util/string_util.h"
 #include "util/xxhash.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 extern const std::string kHashIndexPrefixesBlock;
 extern const std::string kHashIndexPrefixesMetadataBlock;
@@ -425,7 +426,6 @@ struct BlockBasedTableBuilder::Rep {
       context.column_family_name = column_family_name;
       context.compaction_style = ioptions.compaction_style;
       context.level_at_creation = level_at_creation;
-      context.info_log = ioptions.info_log;
       filter_builder.reset(CreateFilterBlockBuilder(
           ioptions, moptions, context, use_delta_encoding_for_index_values,
           p_index_builder_));
@@ -1108,9 +1108,7 @@ void BlockBasedTableBuilder::EnterUnbuffered() {
 
     for (const auto& key : keys) {
       if (r->filter_builder != nullptr) {
-        size_t ts_sz =
-            r->internal_comparator.user_comparator()->timestamp_size();
-        r->filter_builder->Add(ExtractUserKeyAndStripTimestamp(key, ts_sz));
+        r->filter_builder->Add(ExtractUserKey(key));
       }
       r->index_builder->OnKeyAdded(key);
     }
@@ -1164,9 +1162,6 @@ Status BlockBasedTableBuilder::Finish() {
   if (ok()) {
     WriteFooter(metaindex_block_handle, index_block_handle);
   }
-  if (r->file != nullptr) {
-    file_checksum_ = r->file->GetFileChecksum();
-  }
   r->state = Rep::State::kClosed;
   return r->status;
 }
@@ -1202,16 +1197,8 @@ TableProperties BlockBasedTableBuilder::GetTableProperties() const {
   return ret;
 }
 
-const char* BlockBasedTableBuilder::GetFileChecksumFuncName() const {
-  if (rep_->file != nullptr) {
-    return rep_->file->GetFileChecksumFuncName();
-  } else {
-    return kUnknownFileChecksumFuncName.c_str();
-  }
-}
-
 const std::string BlockBasedTable::kFilterBlockPrefix = "filter.";
 const std::string BlockBasedTable::kFullFilterBlockPrefix = "fullfilter.";
 const std::string BlockBasedTable::kPartitionedFilterBlockPrefix =
     "partitionedfilter.";
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

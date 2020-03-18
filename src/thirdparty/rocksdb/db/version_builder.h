@@ -8,10 +8,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 //
 #pragma once
-#include "rocksdb/file_system.h"
+#include "rocksdb/env.h"
 #include "rocksdb/slice_transform.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class TableCache;
 class VersionStorageInfo;
@@ -24,7 +24,7 @@ class InternalStats;
 // Versions that contain full copies of the intermediate state.
 class VersionBuilder {
  public:
-  VersionBuilder(const FileOptions& file_options, TableCache* table_cache,
+  VersionBuilder(const EnvOptions& env_options, TableCache* table_cache,
                  VersionStorageInfo* base_vstorage, Logger* info_log = nullptr);
   ~VersionBuilder();
   Status CheckConsistency(VersionStorageInfo* vstorage);
@@ -45,4 +45,4 @@ class VersionBuilder {
 };
 
 extern bool NewestFirstBySeqNo(FileMetaData* a, FileMetaData* b);
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

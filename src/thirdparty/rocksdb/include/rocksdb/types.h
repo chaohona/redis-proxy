@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include "rocksdb/slice.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Define all public custom types here.
 
@@ -51,4 +51,4 @@ struct FullKey {
 // internal_key is alive.
 bool ParseFullKey(const Slice& internal_key, FullKey* result);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  //  namespace rocksdb

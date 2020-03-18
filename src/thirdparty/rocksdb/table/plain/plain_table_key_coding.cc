@@ -13,7 +13,7 @@
 #include "table/plain/plain_table_factory.h"
 #include "table/plain/plain_table_reader.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 enum PlainTableEntryType : unsigned char {
   kFullKey = 0,
@@ -494,5 +494,5 @@ Status PlainTableKeyDecoder::NextKeyNoValue(uint32_t start_offset,
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LIT

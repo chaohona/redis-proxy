@@ -16,7 +16,7 @@
 #include "util/hash.h"
 #include "util/random.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Our test skip list stores 8-byte unsigned integers
 typedef uint64_t Key;
@@ -655,7 +655,7 @@ TEST_F(InlineSkipTest, ConcurrentInsertWithHint3) {
 }
 
 #endif  // ROCKSDB_VALGRIND_RUN
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -9,7 +9,7 @@
 #include "table/block_based/block_based_table_reader.h"
 #include "table/block_based/filter_policy_internal.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace mock {
 
 class MockBlockBasedTable : public BlockBasedTable {
@@ -47,10 +47,9 @@ class MockBlockBasedTableTester {
     context.column_family_name = "mock_cf";
     context.compaction_style = ioptions_.compaction_style;
     context.level_at_creation = kMockLevel;
-    context.info_log = ioptions_.info_log;
     return BloomFilterPolicy::GetBuilderFromContext(context);
   }
 };
 
 }  // namespace mock
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

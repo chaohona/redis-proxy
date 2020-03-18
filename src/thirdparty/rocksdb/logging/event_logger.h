@@ -13,7 +13,7 @@
 #include "logging/log_buffer.h"
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class JSONWriter {
  public:
@@ -162,11 +162,10 @@ class EventLoggerStream {
   }
   friend class EventLogger;
   explicit EventLoggerStream(Logger* logger);
-  explicit EventLoggerStream(LogBuffer* log_buffer, const size_t max_log_size);
+  explicit EventLoggerStream(LogBuffer* log_buffer);
   // exactly one is non-nullptr
   Logger* const logger_;
   LogBuffer* const log_buffer_;
-  const size_t max_log_size_;  // used only for log_buffer_
   // ownership
   JSONWriter* json_writer_;
 };
@@ -184,20 +183,14 @@ class EventLogger {
   explicit EventLogger(Logger* logger) : logger_(logger) {}
   EventLoggerStream Log() { return EventLoggerStream(logger_); }
   EventLoggerStream LogToBuffer(LogBuffer* log_buffer) {
-    return EventLoggerStream(log_buffer, LogBuffer::kDefaultMaxLogSize);
-  }
-  EventLoggerStream LogToBuffer(LogBuffer* log_buffer,
-                                const size_t max_log_size) {
-    return EventLoggerStream(log_buffer, max_log_size);
+    return EventLoggerStream(log_buffer);
   }
   void Log(const JSONWriter& jwriter);
   static void Log(Logger* logger, const JSONWriter& jwriter);
-  static void LogToBuffer(
-      LogBuffer* log_buffer, const JSONWriter& jwriter,
-      const size_t max_log_size = LogBuffer::kDefaultMaxLogSize);
+  static void LogToBuffer(LogBuffer* log_buffer, const JSONWriter& jwriter);
 
  private:
   Logger* logger_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

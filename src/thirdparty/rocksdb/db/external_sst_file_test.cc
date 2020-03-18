@@ -14,7 +14,7 @@
 #include "test_util/fault_injection_test_env.h"
 #include "test_util/testutil.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // A test environment that can be configured to fail the Link operation.
 class ExternalSSTTestEnv : public EnvWrapper {
@@ -476,17 +476,17 @@ TEST_F(ExternalSSTFileTest, Basic) {
     }
     ASSERT_NE(db_->GetLatestSequenceNumber(), 0U);
 
-    // Key range of file5 (400 => 499) don't overlap with any keys in DB
+    // Key range of file5 (400 => 499) dont overlap with any keys in DB
     ASSERT_OK(DeprecatedAddFile({file5}));
 
     // This file has overlapping values with the existing data
     s = DeprecatedAddFile({file6});
     ASSERT_FALSE(s.ok()) << s.ToString();
 
-    // Key range of file7 (500 => 598) don't overlap with any keys in DB
+    // Key range of file7 (500 => 598) dont overlap with any keys in DB
     ASSERT_OK(DeprecatedAddFile({file7}));
 
-    // Key range of file7 (600 => 700) don't overlap with any keys in DB
+    // Key range of file7 (600 => 700) dont overlap with any keys in DB
     ASSERT_OK(DeprecatedAddFile({file8}));
 
     // Make sure values are correct before and after flush/compaction
@@ -889,7 +889,7 @@ TEST_F(ExternalSSTFileTest, PurgeObsoleteFilesBug) {
   options.disable_auto_compactions = true;
   DestroyAndReopen(options);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "ExternalSstFileIngestionJob::Prepare:FileAdded", [&](void* /* arg */) {
         ASSERT_OK(Put("aaa", "bbb"));
         ASSERT_OK(Flush());
@@ -897,7 +897,7 @@ TEST_F(ExternalSSTFileTest, PurgeObsoleteFilesBug) {
         ASSERT_OK(Flush());
         db_->CompactRange(CompactRangeOptions(), nullptr, nullptr);
       });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   s = DeprecatedAddFile({sst_file_path});
   ASSERT_OK(s);
@@ -908,7 +908,7 @@ TEST_F(ExternalSSTFileTest, PurgeObsoleteFilesBug) {
     ASSERT_EQ(Get(k), v);
   }
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(ExternalSSTFileTest, SkipSnapshot) {
@@ -1099,25 +1099,25 @@ TEST_F(ExternalSSTFileTest, MultiThreaded) {
 TEST_F(ExternalSSTFileTest, OverlappingRanges) {
   Random rnd(301);
   SequenceNumber assigned_seqno = 0;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
-      "ExternalSstFileIngestionJob::Run", [&assigned_seqno](void* arg) {
-        ASSERT_TRUE(arg != nullptr);
-        assigned_seqno = *(static_cast<SequenceNumber*>(arg));
-      });
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+    "ExternalSstFileIngestionJob::Run", [&assigned_seqno](void* arg) {
+      ASSERT_TRUE(arg != nullptr);
+      assigned_seqno = *(static_cast<SequenceNumber*>(arg));
+    });
   bool need_flush = false;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
-      "DBImpl::IngestExternalFile:NeedFlush", [&need_flush](void* arg) {
-        ASSERT_TRUE(arg != nullptr);
-        need_flush = *(static_cast<bool*>(arg));
-      });
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
+    "DBImpl::IngestExternalFile:NeedFlush", [&need_flush](void* arg) {
+      ASSERT_TRUE(arg != nullptr);
+      need_flush = *(static_cast<bool*>(arg));
+    });
   bool overlap_with_db = false;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "ExternalSstFileIngestionJob::AssignLevelAndSeqnoForIngestedFile",
       [&overlap_with_db](void* arg) {
         ASSERT_TRUE(arg != nullptr);
         overlap_with_db = *(static_cast<bool*>(arg));
       });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
   do {
     Options options = CurrentOptions();
     DestroyAndReopen(options);
@@ -1246,14 +1246,14 @@ TEST_P(ExternalSSTFileTest, PickedLevel) {
                                        false, false, &true_data));
   EXPECT_EQ(FilesPerLevel(), "0,0,1,1");
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependency({
+  rocksdb::SyncPoint::GetInstance()->LoadDependency({
       {"ExternalSSTFileTest::PickedLevel:0", "BackgroundCallCompaction:0"},
       {"DBImpl::BackgroundCompaction:Start",
        "ExternalSSTFileTest::PickedLevel:1"},
       {"ExternalSSTFileTest::PickedLevel:2",
        "DBImpl::BackgroundCompaction:NonTrivial:AfterRun"},
   });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   // Flush 4 files containing the same keys
   for (int i = 0; i < 4; i++) {
@@ -1290,7 +1290,7 @@ TEST_P(ExternalSSTFileTest, PickedLevel) {
   size_t kcnt = 0;
   VerifyDBFromMap(true_data, &kcnt, false);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(ExternalSSTFileTest, PickedLevelBug) {
@@ -1319,7 +1319,7 @@ TEST_F(ExternalSSTFileTest, PickedLevelBug) {
   // We have 2 overlapping files in L0
   EXPECT_EQ(FilesPerLevel(), "2");
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependency(
+  rocksdb::SyncPoint::GetInstance()->LoadDependency(
       {{"DBImpl::AddFile:MutexLock", "ExternalSSTFileTest::PickedLevelBug:0"},
        {"ExternalSSTFileTest::PickedLevelBug:1", "DBImpl::AddFile:MutexUnlock"},
        {"ExternalSSTFileTest::PickedLevelBug:2",
@@ -1328,20 +1328,20 @@ TEST_F(ExternalSSTFileTest, PickedLevelBug) {
         "DBImpl::RunManualCompaction:1"}});
 
   std::atomic<bool> bg_compact_started(false);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::BackgroundCompaction:Start",
       [&](void* /*arg*/) { bg_compact_started.store(true); });
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   // While writing the MANIFEST start a thread that will ask for compaction
-  ROCKSDB_NAMESPACE::port::Thread bg_compact([&]() {
+  rocksdb::port::Thread bg_compact([&]() {
     ASSERT_OK(db_->CompactRange(CompactRangeOptions(), nullptr, nullptr));
   });
   TEST_SYNC_POINT("ExternalSSTFileTest::PickedLevelBug:2");
 
   // Start a thread that will ingest a new file
-  ROCKSDB_NAMESPACE::port::Thread bg_addfile([&]() {
+  rocksdb::port::Thread bg_addfile([&]() {
     file_keys = {1, 2, 3};
     ASSERT_OK(GenerateAndAddExternalFile(options, file_keys, 1));
   });
@@ -1376,7 +1376,7 @@ TEST_F(ExternalSSTFileTest, PickedLevelBug) {
 
   delete iter;
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(ExternalSSTFileTest, IngestNonExistingFile) {
@@ -1479,7 +1479,7 @@ TEST_F(ExternalSSTFileTest, PickedLevelDynamic) {
   DestroyAndReopen(options);
   std::map<std::string, std::string> true_data;
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependency({
+  rocksdb::SyncPoint::GetInstance()->LoadDependency({
       {"ExternalSSTFileTest::PickedLevelDynamic:0",
        "BackgroundCallCompaction:0"},
       {"DBImpl::BackgroundCompaction:Start",
@@ -1487,7 +1487,7 @@ TEST_F(ExternalSSTFileTest, PickedLevelDynamic) {
       {"ExternalSSTFileTest::PickedLevelDynamic:2",
        "DBImpl::BackgroundCompaction:NonTrivial:AfterRun"},
   });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   // Flush 4 files containing the same keys
   for (int i = 0; i < 4; i++) {
@@ -1571,7 +1571,7 @@ TEST_F(ExternalSSTFileTest, PickedLevelDynamic) {
 
   VerifyDBFromMap(true_data, &kcnt, false);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(ExternalSSTFileTest, AddExternalSstFileWithCustomCompartor) {
@@ -1609,15 +1609,15 @@ TEST_F(ExternalSSTFileTest, AddExternalSstFileWithCustomCompartor) {
               generated_files[7]};
   ASSERT_NOK(DeprecatedAddFile(in_files));
 
-  // These 2 files don't overlap with each other
+  // These 2 files dont overlap with each other
   in_files = {generated_files[0], generated_files[2]};
   ASSERT_OK(DeprecatedAddFile(in_files));
 
-  // These 2 files don't overlap with each other but overlap with keys in DB
+  // These 2 files dont overlap with each other but overlap with keys in DB
   in_files = {generated_files[3], generated_files[7]};
   ASSERT_NOK(DeprecatedAddFile(in_files));
 
-  // Files don't overlap and don't overlap with DB key range
+  // Files dont overlap and dont overlap with DB key range
   in_files = {generated_files[4], generated_files[6], generated_files[8]};
   ASSERT_OK(DeprecatedAddFile(in_files));
 
@@ -1645,7 +1645,7 @@ TEST_F(ExternalSSTFileTest, AddFileTrivialMoveBug) {
   ASSERT_OK(GenerateAndAddExternalFile(options, {20, 24}, 5));  // L3
   ASSERT_OK(GenerateAndAddExternalFile(options, {22, 23}, 6));  // L2
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "CompactionJob::Run():Start", [&](void* /*arg*/) {
         // fit in L3 but will overlap with compaction so will be added
         // to L2 but a compaction will trivially move it to L3
@@ -1657,7 +1657,7 @@ TEST_F(ExternalSSTFileTest, AddFileTrivialMoveBug) {
           ASSERT_OK(GenerateAndAddExternalFile(options, {15, 16}, 7));
         }
       });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   CompactRangeOptions cro;
   cro.exclusive_manual_compaction = false;
@@ -1665,7 +1665,7 @@ TEST_F(ExternalSSTFileTest, AddFileTrivialMoveBug) {
 
   dbfull()->TEST_WaitForCompact();
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(ExternalSSTFileTest, CompactAddedFiles) {
@@ -1698,35 +1698,6 @@ TEST_F(ExternalSSTFileTest, SstFileWriterNonSharedKeys) {
 
   ASSERT_OK(sst_file_writer.Finish());
   ASSERT_OK(DeprecatedAddFile({file_path}));
-}
-
-TEST_F(ExternalSSTFileTest, WithUnorderedWrite) {
-  SyncPoint::GetInstance()->DisableProcessing();
-  SyncPoint::GetInstance()->LoadDependency(
-      {{"DBImpl::WriteImpl:UnorderedWriteAfterWriteWAL",
-        "ExternalSSTFileTest::WithUnorderedWrite:WaitWriteWAL"},
-       {"DBImpl::WaitForPendingWrites:BeforeBlock",
-        "DBImpl::WriteImpl:BeforeUnorderedWriteMemtable"}});
-  SyncPoint::GetInstance()->SetCallBack(
-      "DBImpl::IngestExternalFile:NeedFlush", [&](void* need_flush) {
-        ASSERT_TRUE(*reinterpret_cast<bool*>(need_flush));
-      });
-
-  Options options = CurrentOptions();
-  options.unordered_write = true;
-  DestroyAndReopen(options);
-  Put("foo", "v1");
-  SyncPoint::GetInstance()->EnableProcessing();
-  port::Thread writer([&]() { Put("bar", "v2"); });
-
-  TEST_SYNC_POINT("ExternalSSTFileTest::WithUnorderedWrite:WaitWriteWAL");
-  ASSERT_OK(GenerateAndAddExternalFile(options, {{"bar", "v3"}}, -1,
-                                       true /* allow_global_seqno */));
-  ASSERT_EQ(Get("bar"), "v3");
-
-  writer.join();
-  SyncPoint::GetInstance()->DisableProcessing();
-  SyncPoint::GetInstance()->ClearAllCallBacks();
 }
 
 TEST_P(ExternalSSTFileTest, IngestFileWithGlobalSeqnoRandomized) {
@@ -1797,7 +1768,7 @@ TEST_P(ExternalSSTFileTest, IngestFileWithGlobalSeqnoAssignedLevel) {
       options, file_data, -1, true, write_global_seqno,
       verify_checksums_before_ingest, false, false, &true_data));
 
-  // This file don't overlap with anything in the DB, will go to L4
+  // This file dont overlap with anything in the DB, will go to L4
   ASSERT_EQ("0,0,0,0,1", FilesPerLevel());
 
   // Insert 80 -> 130 using AddFile
@@ -1822,7 +1793,7 @@ TEST_P(ExternalSSTFileTest, IngestFileWithGlobalSeqnoAssignedLevel) {
       options, file_data, -1, true, write_global_seqno,
       verify_checksums_before_ingest, false, false, &true_data));
 
-  // This file don't overlap with anything in the DB and fit in L4 as well
+  // This file dont overlap with anything in the DB and fit in L4 as well
   ASSERT_EQ("2,0,0,0,2", FilesPerLevel());
 
   // Insert 10 -> 40 using AddFile
@@ -1948,16 +1919,16 @@ TEST_F(ExternalSSTFileTest, CompactionDeadlock) {
   // atomic conter of currently running bg threads
   std::atomic<int> running_threads(0);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependency({
+  rocksdb::SyncPoint::GetInstance()->LoadDependency({
       {"DBImpl::DelayWrite:Wait", "ExternalSSTFileTest::DeadLock:0"},
       {"ExternalSSTFileTest::DeadLock:1", "DBImpl::AddFile:Start"},
       {"DBImpl::AddFile:MutexLock", "ExternalSSTFileTest::DeadLock:2"},
       {"ExternalSSTFileTest::DeadLock:3", "BackgroundCallCompaction:0"},
   });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   // Start ingesting and extrnal file in the background
-  ROCKSDB_NAMESPACE::port::Thread bg_ingest_file([&]() {
+  rocksdb::port::Thread bg_ingest_file([&]() {
     running_threads += 1;
     ASSERT_OK(GenerateAndAddExternalFile(options, {5, 6}));
     running_threads -= 1;
@@ -1977,7 +1948,7 @@ TEST_F(ExternalSSTFileTest, CompactionDeadlock) {
 
   // This thread will try to insert into the memtable but since we have 4 L0
   // files this thread will be blocked and hold the writer thread
-  ROCKSDB_NAMESPACE::port::Thread bg_block_put([&]() {
+  rocksdb::port::Thread bg_block_put([&]() {
     running_threads += 1;
     ASSERT_OK(Put(Key(10), "memtable"));
     running_threads -= 1;
@@ -2059,16 +2030,16 @@ TEST_F(ExternalSSTFileTest, FileWithCFInfo) {
 
   IngestExternalFileOptions ifo;
 
-  // SST CF don't match
+  // SST CF dont match
   ASSERT_NOK(db_->IngestExternalFile(handles_[0], {cf1_sst}, ifo));
-  // SST CF don't match
+  // SST CF dont match
   ASSERT_NOK(db_->IngestExternalFile(handles_[2], {cf1_sst}, ifo));
   // SST CF match
   ASSERT_OK(db_->IngestExternalFile(handles_[1], {cf1_sst}, ifo));
 
-  // SST CF don't match
+  // SST CF dont match
   ASSERT_NOK(db_->IngestExternalFile(handles_[1], {cf_default_sst}, ifo));
-  // SST CF don't match
+  // SST CF dont match
   ASSERT_NOK(db_->IngestExternalFile(handles_[2], {cf_default_sst}, ifo));
   // SST CF match
   ASSERT_OK(db_->IngestExternalFile(handles_[0], {cf_default_sst}, ifo));
@@ -2115,10 +2086,10 @@ TEST_P(ExternSSTFileLinkFailFallbackTest, LinkFailFallBackExternalSst) {
   ASSERT_OK(env_->GetFileSize(file_path, &file_size));
 
   bool copyfile = false;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "ExternalSstFileIngestionJob::Prepare:CopyFile",
       [&](void* /* arg */) { copyfile = true; });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   const Status s = db_->IngestExternalFile({file_path}, ifo);
 
@@ -2156,7 +2127,7 @@ TEST_P(ExternSSTFileLinkFailFallbackTest, LinkFailFallBackExternalSst) {
       ASSERT_EQ(0, bytes_copied);
     }
   }
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 class TestIngestExternalFileListener : public EventListener {
@@ -2324,7 +2295,7 @@ TEST_F(ExternalSSTFileTest, SkipBloomFilter) {
 
 
   // Create external SST file and include bloom filters
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   DestroyAndReopen(options);
   {
     std::string file_path = sst_files_dir_ + "sst_with_bloom.sst";
@@ -2342,7 +2313,7 @@ TEST_F(ExternalSSTFileTest, SkipBloomFilter) {
   }
 
   // Create external SST file but skip bloom filters
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   DestroyAndReopen(options);
   {
     std::string file_path = sst_files_dir_ + "sst_with_no_bloom.sst";
@@ -2375,10 +2346,10 @@ TEST_F(ExternalSSTFileTest, IngestFileWrittenWithCompressionDictionary) {
   DestroyAndReopen(options);
 
   std::atomic<int> num_compression_dicts(0);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "BlockBasedTableBuilder::WriteCompressionDictBlock:RawDict",
       [&](void* /* arg */) { ++num_compression_dicts; });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   Random rnd(301);
   std::vector<std::pair<std::string, std::string>> random_data;
@@ -2811,10 +2782,10 @@ INSTANTIATE_TEST_CASE_P(ExternSSTFileLinkFailFallbackTest,
                                         std::make_tuple(true, true),
                                         std::make_tuple(false, false)));
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

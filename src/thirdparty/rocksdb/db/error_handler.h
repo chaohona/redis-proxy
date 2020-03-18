@@ -9,7 +9,7 @@
 #include "rocksdb/listener.h"
 #include "rocksdb/status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class DBImpl;
 
@@ -72,4 +72,4 @@ class ErrorHandler {
     void RecoverFromNoSpace();
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}

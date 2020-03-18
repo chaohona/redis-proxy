@@ -13,9 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "rocksdb/rocksdb_namespace.h"
-
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Slice;
 class SliceTransform;
@@ -46,8 +44,6 @@ class CompactionFilter {
     kChangeValue,
     kRemoveAndSkipUntil,
   };
-
-  enum class BlobDecision { kKeep, kChangeValue, kCorruption, kIOError };
 
   // Context information of a compaction run
   struct Context {
@@ -177,13 +173,6 @@ class CompactionFilter {
     return Decision::kKeep;
   }
 
-  // Internal (BlobDB) use only. Do not override in application code.
-  virtual BlobDecision PrepareBlobOutput(const Slice& /* key */,
-                                         const Slice& /* existing_value */,
-                                         std::string* /* new_value */) const {
-    return BlobDecision::kKeep;
-  }
-
   // This function is deprecated. Snapshots will always be ignored for
   // compaction filters, because we realized that not ignoring snapshots doesn't
   // provide the gurantee we initially thought it would provide. Repeatable
@@ -209,4 +198,4 @@ class CompactionFilterFactory {
   virtual const char* Name() const = 0;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

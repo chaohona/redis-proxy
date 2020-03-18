@@ -19,7 +19,7 @@
 #include "util/random.h"
 #include "util/rate_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 Status RandomAccessFileReader::Read(uint64_t offset, size_t n, Slice* result,
                                     char* scratch, bool for_compaction) const {
   Status s;
@@ -61,8 +61,8 @@ Status RandomAccessFileReader::Read(uint64_t offset, size_t n, Slice* result,
         }
         {
           IOSTATS_CPU_TIMER_GUARD(cpu_read_nanos, env_);
-          s = file_->Read(aligned_offset + buf.CurrentSize(), allowed,
-                          IOOptions(), &tmp, buf.Destination(), nullptr);
+          s = file_->Read(aligned_offset + buf.CurrentSize(), allowed, &tmp,
+                          buf.Destination());
         }
         if (ShouldNotifyListeners()) {
           auto finish_ts = std::chrono::system_clock::now();
@@ -110,8 +110,7 @@ Status RandomAccessFileReader::Read(uint64_t offset, size_t n, Slice* result,
 #endif
         {
           IOSTATS_CPU_TIMER_GUARD(cpu_read_nanos, env_);
-          s = file_->Read(offset + pos, allowed, IOOptions(), &tmp_result,
-                          scratch + pos, nullptr);
+          s = file_->Read(offset + pos, allowed, &tmp_result, scratch + pos);
         }
 #ifndef ROCKSDB_LITE
         if (ShouldNotifyListeners()) {
@@ -146,7 +145,7 @@ Status RandomAccessFileReader::Read(uint64_t offset, size_t n, Slice* result,
   return s;
 }
 
-Status RandomAccessFileReader::MultiRead(FSReadRequest* read_reqs,
+Status RandomAccessFileReader::MultiRead(ReadRequest* read_reqs,
                                          size_t num_reqs) const {
   Status s;
   uint64_t elapsed = 0;
@@ -166,7 +165,7 @@ Status RandomAccessFileReader::MultiRead(FSReadRequest* read_reqs,
 #endif  // ROCKSDB_LITE
     {
       IOSTATS_CPU_TIMER_GUARD(cpu_read_nanos, env_);
-      s = file_->MultiRead(read_reqs, num_reqs, IOOptions(), nullptr);
+      s = file_->MultiRead(read_reqs, num_reqs);
     }
     for (size_t i = 0; i < num_reqs; ++i) {
 #ifndef ROCKSDB_LITE
@@ -186,4 +185,4 @@ Status RandomAccessFileReader::MultiRead(FSReadRequest* read_reqs,
 
   return s;
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

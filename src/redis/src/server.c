@@ -324,7 +324,11 @@ struct redisCommand redisCommandTable[] = {
     {"post",securityWarningCommand,-1,"lt",0,NULL,0,0,0,0,0},
     {"host:",securityWarningCommand,-1,"lt",0,NULL,0,0,0,0,0},
     {"latency",latencyCommand,-2,"aslt",0,NULL,0,0,0,0,0},
-    {"lolwut",lolwutCommand,-1,"r",0,NULL,0,0,0,0,0}
+    {"lolwut",lolwutCommand,-1,"r",0,NULL,0,0,0,0,0},
+
+    /***********gredis*************/
+    {"timeflag", timeflagCommand,-1,"r",0,NULL,0,0,0,0,0}
+    /***********gredis*************/
 };
 
 /*============================ Utility functions ============================ */
@@ -1726,6 +1730,11 @@ void initServerConfig(void) {
      * script to the slave / AOF. This is the new way starting from
      * Redis 5. However it is possible to revert it via redis.conf. */
     server.lua_always_replicate_commands = 1;
+
+    /*******gredis********/
+    server.aof_time_flag = AOF_TIME_FLAG_OFF;
+    server.aof_tf_skip_num = AOF_SKIP_DEF_NUM;
+    /*******gredis********/
 }
 
 extern char **environ;

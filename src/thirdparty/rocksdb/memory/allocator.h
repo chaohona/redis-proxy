@@ -15,7 +15,7 @@
 #include <cstddef>
 #include "rocksdb/write_buffer_manager.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Logger;
 
@@ -54,4 +54,4 @@ class AllocTracker {
   bool freed_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

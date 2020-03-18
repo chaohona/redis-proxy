@@ -33,7 +33,7 @@ int main() {
 #include "tools/trace_analyzer_tool.h"
 #include "trace_replay/trace_replay.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 static const int kMaxArgCount = 100;
@@ -46,7 +46,7 @@ class TraceAnalyzerTest : public testing::Test {
   TraceAnalyzerTest() : rnd_(0xFB) {
     // test_path_ = test::TmpDir() + "trace_analyzer_test";
     test_path_ = test::PerThreadDBPath("trace_analyzer_test");
-    env_ = ROCKSDB_NAMESPACE::Env::Default();
+    env_ = rocksdb::Env::Default();
     env_->CreateDir(test_path_);
     dbname_ = test_path_ + "/db";
   }
@@ -115,7 +115,7 @@ class TraceAnalyzerTest : public testing::Test {
       cursor += static_cast<int>(arg.size()) + 1;
     }
 
-    ASSERT_EQ(0, ROCKSDB_NAMESPACE::trace_analyzer_tool(argc, argv));
+    ASSERT_EQ(0, rocksdb::trace_analyzer_tool(argc, argv));
   }
 
   void CheckFileContent(const std::vector<std::string>& cnt,
@@ -130,12 +130,7 @@ class TraceAnalyzerTest : public testing::Test {
     std::vector<std::string> result;
     uint32_t count;
     Status s;
-    std::unique_ptr<FSSequentialFile> file =
-        NewLegacySequentialFileWrapper(f_ptr);
-    SequentialFileReader sf_reader(std::move(file), file_path,
-                                   4096 /* filereadahead_size */);
-
-    for (count = 0; ReadOneLine(&iss, &sf_reader, &get_line, &has_data, &s);
+    for (count = 0; ReadOneLine(&iss, f_ptr.get(), &get_line, &has_data, &s);
          ++count) {
       ASSERT_OK(s);
       result.push_back(get_line);
@@ -177,7 +172,7 @@ class TraceAnalyzerTest : public testing::Test {
     RunTraceAnalyzer(paras);
   }
 
-  ROCKSDB_NAMESPACE::Env* env_;
+  rocksdb::Env* env_;
   EnvOptions env_options_;
   std::string test_path_;
   std::string dbname_;
@@ -709,7 +704,7 @@ TEST_F(TraceAnalyzerTest, Iterator) {
   CheckFileContent(top_qps, file_path, true);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -15,7 +15,7 @@
 #include "util/aligned_buffer.h"
 #include "util/rate_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace {
 class ReadaheadRandomAccessFile : public RandomAccessFile {
  public:
@@ -159,4 +159,4 @@ std::unique_ptr<RandomAccessFile> NewReadaheadRandomAccessFile(
       new ReadaheadRandomAccessFile(std::move(file), readahead_size));
   return result;
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

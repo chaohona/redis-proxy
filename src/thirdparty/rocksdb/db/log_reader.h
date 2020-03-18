@@ -17,7 +17,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class Logger;
 
 namespace log {
@@ -92,10 +92,6 @@ class Reader {
   Reporter* GetReporter() const { return reporter_; }
 
   uint64_t GetLogNumber() const { return log_number_; }
-
-  size_t GetReadOffset() const {
-    return static_cast<size_t>(end_of_buffer_offset_);
-  }
 
  protected:
   std::shared_ptr<Logger> info_log_;
@@ -186,4 +182,4 @@ class FragmentBufferedReader : public Reader {
 };
 
 }  // namespace log
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

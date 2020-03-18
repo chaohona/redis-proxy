@@ -60,6 +60,8 @@ public:
     int                     m_iRedisRspTT = 200;
     GR_TimerMeta            *pConnectingMeta = nullptr;
     GR_Route                *m_pRoute = nullptr;
+    uint64                  m_ulSendMsgNum = 0;
+    uint64                  m_ulRecvMsgNum = 0;
 };
 
 class GR_RedisServer

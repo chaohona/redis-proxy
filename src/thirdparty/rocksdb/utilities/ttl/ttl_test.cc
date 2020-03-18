@@ -15,7 +15,7 @@
 #include <unistd.h>
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 
@@ -674,7 +674,7 @@ TEST_F(TtlTest, ChangeTtlOnOpenDb) {
   CloseTtl();
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+} //  namespace rocksdb
 
 // A black-box test for the ttl wrapper around rocksdb
 int main(int argc, char** argv) {

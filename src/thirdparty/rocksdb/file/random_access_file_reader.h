@@ -13,12 +13,12 @@
 #include <string>
 #include "port/port.h"
 #include "rocksdb/env.h"
-#include "rocksdb/file_system.h"
 #include "rocksdb/listener.h"
 #include "rocksdb/rate_limiter.h"
 #include "util/aligned_buffer.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
+
 class Statistics;
 class HistogramImpl;
 
@@ -48,7 +48,7 @@ class RandomAccessFileReader {
 
   bool ShouldNotifyListeners() const { return !listeners_.empty(); }
 
-  std::unique_ptr<FSRandomAccessFile> file_;
+  std::unique_ptr<RandomAccessFile> file_;
   std::string file_name_;
   Env* env_;
   Statistics* stats_;
@@ -59,7 +59,7 @@ class RandomAccessFileReader {
 
  public:
   explicit RandomAccessFileReader(
-      std::unique_ptr<FSRandomAccessFile>&& raf, std::string _file_name,
+      std::unique_ptr<RandomAccessFile>&& raf, std::string _file_name,
       Env* env = nullptr, Statistics* stats = nullptr, uint32_t hist_type = 0,
       HistogramImpl* file_read_hist = nullptr,
       RateLimiter* rate_limiter = nullptr,
@@ -105,16 +105,16 @@ class RandomAccessFileReader {
   Status Read(uint64_t offset, size_t n, Slice* result, char* scratch,
               bool for_compaction = false) const;
 
-  Status MultiRead(FSReadRequest* reqs, size_t num_reqs) const;
+  Status MultiRead(ReadRequest* reqs, size_t num_reqs) const;
 
   Status Prefetch(uint64_t offset, size_t n) const {
-    return file_->Prefetch(offset, n, IOOptions(), nullptr);
+    return file_->Prefetch(offset, n);
   }
 
-  FSRandomAccessFile* file() { return file_.get(); }
+  RandomAccessFile* file() { return file_.get(); }
 
   std::string file_name() const { return file_name_; }
 
   bool use_direct_io() const { return file_->use_direct_io(); }
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

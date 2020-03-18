@@ -8,9 +8,7 @@
 #include <stdint.h>
 #include <string>
 
-#include "rocksdb/rocksdb_namespace.h"
-
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // How much perf stats to collect. Affects perf_context and iostats_context.
 enum PerfLevel : unsigned char {
@@ -32,4 +30,4 @@ void SetPerfLevel(PerfLevel level);
 // get current perf stats level for current thread
 PerfLevel GetPerfLevel();
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

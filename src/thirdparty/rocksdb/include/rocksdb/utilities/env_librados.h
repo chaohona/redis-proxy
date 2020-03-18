@@ -13,7 +13,7 @@
 
 #include <rados/librados.hpp>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class LibradosWritableFile;
 
 class EnvLibrados : public EnvWrapper {
@@ -172,4 +172,4 @@ class EnvLibrados : public EnvWrapper {
   librados::IoCtx* _GetIoctx(const std::string& prefix);
   friend class LibradosWritableFile;
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

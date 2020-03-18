@@ -9,7 +9,7 @@
 
 #include "db/column_family.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 void FlushScheduler::ScheduleWork(ColumnFamilyData* cfd) {
 #ifndef NDEBUG
@@ -60,7 +60,9 @@ ColumnFamilyData* FlushScheduler::TakeNextColumnFamily() {
     }
 
     // no longer relevant, retry
-    cfd->UnrefAndTryDelete();
+    if (cfd->Unref()) {
+      delete cfd;
+    }
   }
 }
 
@@ -78,9 +80,11 @@ bool FlushScheduler::Empty() {
 void FlushScheduler::Clear() {
   ColumnFamilyData* cfd;
   while ((cfd = TakeNextColumnFamily()) != nullptr) {
-    cfd->UnrefAndTryDelete();
+    if (cfd->Unref()) {
+      delete cfd;
+    }
   }
   assert(head_.load(std::memory_order_relaxed) == nullptr);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

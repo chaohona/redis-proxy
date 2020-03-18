@@ -22,7 +22,7 @@
 #include "util/cast_util.h"
 #include "util/concurrent_task_limiter_impl.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 bool DBImpl::EnoughRoomForCompaction(
     ColumnFamilyData* cfd, const std::vector<CompactionInputFiles>& inputs,
@@ -117,7 +117,7 @@ Status DBImpl::SyncClosedLogs(JobContext* job_context) {
       }
     }
     if (s.ok()) {
-      s = directories_.GetWalDir()->Fsync(IOOptions(), nullptr);
+      s = directories_.GetWalDir()->Fsync();
     }
 
     mutex_.Lock();
@@ -148,7 +148,7 @@ Status DBImpl::FlushMemTableToOutputFile(
 
   FlushJob flush_job(
       dbname_, cfd, immutable_db_options_, mutable_cf_options,
-      nullptr /* memtable_id */, file_options_for_compaction_, versions_.get(),
+      nullptr /* memtable_id */, env_options_for_compaction_, versions_.get(),
       &mutex_, &shutting_down_, snapshot_seqs, earliest_write_conflict_snapshot,
       snapshot_checker, job_context, log_buffer, directories_.GetDbDir(),
       GetDataDir(cfd, 0U),
@@ -301,7 +301,7 @@ Status DBImpl::AtomicFlushMemTablesToOutputFiles(
   GetSnapshotContext(job_context, &snapshot_seqs,
                      &earliest_write_conflict_snapshot, &snapshot_checker);
 
-  autovector<FSDirectory*> distinct_output_dirs;
+  autovector<Directory*> distinct_output_dirs;
   autovector<std::string> distinct_output_dir_paths;
   std::vector<std::unique_ptr<FlushJob>> jobs;
   std::vector<MutableCFOptions> all_mutable_cf_options;
@@ -309,7 +309,7 @@ Status DBImpl::AtomicFlushMemTablesToOutputFiles(
   all_mutable_cf_options.reserve(num_cfs);
   for (int i = 0; i < num_cfs; ++i) {
     auto cfd = cfds[i];
-    FSDirectory* data_dir = GetDataDir(cfd, 0U);
+    Directory* data_dir = GetDataDir(cfd, 0U);
     const std::string& curr_path = cfd->ioptions()->cf_paths[0].path;
 
     // Add to distinct output directories if eligible. Use linear search. Since
@@ -332,7 +332,7 @@ Status DBImpl::AtomicFlushMemTablesToOutputFiles(
     const uint64_t* max_memtable_id = &(bg_flush_args[i].max_memtable_id_);
     jobs.emplace_back(new FlushJob(
         dbname_, cfd, immutable_db_options_, mutable_cf_options,
-        max_memtable_id, file_options_for_compaction_, versions_.get(), &mutex_,
+        max_memtable_id, env_options_for_compaction_, versions_.get(), &mutex_,
         &shutting_down_, snapshot_seqs, earliest_write_conflict_snapshot,
         snapshot_checker, job_context, log_buffer, directories_.GetDbDir(),
         data_dir, GetCompressionFlush(*cfd->ioptions(), mutable_cf_options),
@@ -409,32 +409,15 @@ Status DBImpl::AtomicFlushMemTablesToOutputFiles(
     s = Status::OK();
   }
 
-  if (s.ok() || s.IsShutdownInProgress()) {
+  if (s.ok() || s.IsShutdownInProgress() || s.IsColumnFamilyDropped()) {
     // Sync on all distinct output directories.
     for (auto dir : distinct_output_dirs) {
       if (dir != nullptr) {
-        Status error_status = dir->Fsync(IOOptions(), nullptr);
+        Status error_status = dir->Fsync();
         if (!error_status.ok()) {
           s = error_status;
           break;
         }
-      }
-    }
-  } else {
-    // Need to undo atomic flush if something went wrong, i.e. s is not OK and
-    // it is not because of CF drop.
-    // Have to cancel the flush jobs that have NOT executed because we need to
-    // unref the versions.
-    for (int i = 0; i != num_cfs; ++i) {
-      if (!exec_status[i].first) {
-        jobs[i]->Cancel();
-      }
-    }
-    for (int i = 0; i != num_cfs; ++i) {
-      if (exec_status[i].first && exec_status[i].second.ok()) {
-        auto& mems = jobs[i]->GetMemTables();
-        cfds[i]->imm()->RollbackMemtableFlush(mems,
-                                              file_meta[i].fd.GetNumber());
       }
     }
   }
@@ -543,7 +526,23 @@ Status DBImpl::AtomicFlushMemTablesToOutputFiles(
 #endif  // ROCKSDB_LITE
   }
 
-  if (!s.ok() && !s.IsShutdownInProgress()) {
+  // Need to undo atomic flush if something went wrong, i.e. s is not OK and
+  // it is not because of CF drop.
+  if (!s.ok() && !s.IsColumnFamilyDropped()) {
+    // Have to cancel the flush jobs that have NOT executed because we need to
+    // unref the versions.
+    for (int i = 0; i != num_cfs; ++i) {
+      if (!exec_status[i].first) {
+        jobs[i]->Cancel();
+      }
+    }
+    for (int i = 0; i != num_cfs; ++i) {
+      if (exec_status[i].first && exec_status[i].second.ok()) {
+        auto& mems = jobs[i]->GetMemTables();
+        cfds[i]->imm()->RollbackMemtableFlush(mems,
+                                              file_meta[i].fd.GetNumber());
+      }
+    }
     Status new_bg_error = s;
     error_handler_.SetBGError(new_bg_error, BackgroundErrorReason::kFlush);
   }
@@ -969,7 +968,7 @@ Status DBImpl::CompactFilesImpl(
   CompactionJobStats compaction_job_stats;
   CompactionJob compaction_job(
       job_context->job_id, c.get(), immutable_db_options_,
-      file_options_for_compaction_, versions_.get(), &shutting_down_,
+      env_options_for_compaction_, versions_.get(), &shutting_down_,
       preserve_deletes_seqnum_.load(), log_buffer, directories_.GetDbDir(),
       GetDataDir(c->column_family_data(), c->output_path_id()), stats_, &mutex_,
       &error_handler_, snapshot_seqs, earliest_write_conflict_snapshot,
@@ -1258,8 +1257,7 @@ Status DBImpl::ReFitLevel(ColumnFamilyData* cfd, int level, int target_level) {
                    f->fd.GetFileSize(), f->smallest, f->largest,
                    f->fd.smallest_seqno, f->fd.largest_seqno,
                    f->marked_for_compaction, f->oldest_blob_file_number,
-                   f->oldest_ancester_time, f->file_creation_time,
-                   f->file_checksum, f->file_checksum_func_name);
+                   f->oldest_ancester_time, f->file_creation_time);
     }
     ROCKS_LOG_DEBUG(immutable_db_options_.info_log,
                     "[%s] Apply version edit:\n%s", cfd->GetName().c_str(),
@@ -1542,7 +1540,6 @@ Status DBImpl::FlushMemTable(ColumnFamilyData* cfd,
         nonmem_write_thread_.EnterUnbatched(&nonmem_w, &mutex_);
       }
     }
-    WaitForPendingWrites();
 
     if (!cfd->mem()->IsEmpty() || !cached_recoverable_state_empty_.load()) {
       s = SwitchMemtable(cfd, &context);
@@ -1620,16 +1617,19 @@ Status DBImpl::FlushMemTable(ColumnFamilyData* cfd,
     }
     s = WaitForFlushMemTables(cfds, flush_memtable_ids,
                               (flush_reason == FlushReason::kErrorRecovery));
-    InstrumentedMutexLock lock_guard(&mutex_);
     for (auto* tmp_cfd : cfds) {
-      tmp_cfd->UnrefAndTryDelete();
+      if (tmp_cfd->Unref()) {
+        // Only one thread can reach here.
+        InstrumentedMutexLock lock_guard(&mutex_);
+        delete tmp_cfd;
+      }
     }
   }
-  TEST_SYNC_POINT("DBImpl::FlushMemTable:FlushMemTableFinished");
+  TEST_SYNC_POINT("FlushMemTableFinished");
   return s;
 }
 
-// Flush all elements in 'column_family_datas'
+// Flush all elments in 'column_family_datas'
 // and atomically record the result to the MANIFEST.
 Status DBImpl::AtomicFlushMemTables(
     const autovector<ColumnFamilyData*>& column_family_datas,
@@ -1665,7 +1665,6 @@ Status DBImpl::AtomicFlushMemTables(
         nonmem_write_thread_.EnterUnbatched(&nonmem_w, &mutex_);
       }
     }
-    WaitForPendingWrites();
 
     for (auto cfd : column_family_datas) {
       if (cfd->IsDropped()) {
@@ -1682,7 +1681,7 @@ Status DBImpl::AtomicFlushMemTables(
       }
       cfd->Ref();
       s = SwitchMemtable(cfd, &context);
-      cfd->UnrefAndTryDelete();
+      cfd->Unref();
       if (!s.ok()) {
         break;
       }
@@ -1722,9 +1721,12 @@ Status DBImpl::AtomicFlushMemTables(
     }
     s = WaitForFlushMemTables(cfds, flush_memtable_ids,
                               (flush_reason == FlushReason::kErrorRecovery));
-    InstrumentedMutexLock lock_guard(&mutex_);
     for (auto* cfd : cfds) {
-      cfd->UnrefAndTryDelete();
+      if (cfd->Unref()) {
+        // Only one thread can reach here.
+        InstrumentedMutexLock lock_guard(&mutex_);
+        delete cfd;
+      }
     }
   }
   return s;
@@ -1916,10 +1918,6 @@ void DBImpl::MaybeScheduleFlushOrCompaction() {
     fta->thread_pri_ = Env::Priority::HIGH;
     env_->Schedule(&DBImpl::BGWorkFlush, fta, Env::Priority::HIGH, this,
                    &DBImpl::UnscheduleFlushCallback);
-    --unscheduled_flushes_;
-    TEST_SYNC_POINT_CALLBACK(
-        "DBImpl::MaybeScheduleFlushOrCompaction:AfterSchedule:0",
-        &unscheduled_flushes_);
   }
 
   // special case -- if high-pri (flush) thread pool is empty, then schedule
@@ -1934,7 +1932,6 @@ void DBImpl::MaybeScheduleFlushOrCompaction() {
       fta->thread_pri_ = Env::Priority::LOW;
       env_->Schedule(&DBImpl::BGWorkFlush, fta, Env::Priority::LOW, this,
                      &DBImpl::UnscheduleFlushCallback);
-      --unscheduled_flushes_;
     }
   }
 
@@ -2018,6 +2015,8 @@ ColumnFamilyData* DBImpl::PopFirstFromCompactionQueue() {
 DBImpl::FlushRequest DBImpl::PopFirstFromFlushQueue() {
   assert(!flush_queue_.empty());
   FlushRequest flush_req = flush_queue_.front();
+  assert(unscheduled_flushes_ >= static_cast<int>(flush_req.size()));
+  unscheduled_flushes_ -= static_cast<int>(flush_req.size());
   flush_queue_.pop_front();
   // TODO: need to unset flush reason?
   return flush_req;
@@ -2059,7 +2058,7 @@ void DBImpl::SchedulePendingFlush(const FlushRequest& flush_req,
     cfd->Ref();
     cfd->SetFlushReason(flush_reason);
   }
-  ++unscheduled_flushes_;
+  unscheduled_flushes_ += static_cast<int>(flush_req.size());
   flush_queue_.push_back(flush_req);
 }
 
@@ -2205,13 +2204,16 @@ Status DBImpl::BackgroundFlush(bool* made_progress, JobContext* job_context,
     *reason = bg_flush_args[0].cfd_->GetFlushReason();
     for (auto& arg : bg_flush_args) {
       ColumnFamilyData* cfd = arg.cfd_;
-      if (cfd->UnrefAndTryDelete()) {
+      if (cfd->Unref()) {
+        delete cfd;
         arg.cfd_ = nullptr;
       }
     }
   }
   for (auto cfd : column_families_not_to_flush) {
-    cfd->UnrefAndTryDelete();
+    if (cfd->Unref()) {
+      delete cfd;
+    }
   }
   return status;
 }
@@ -2540,9 +2542,10 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
     // reference).
     // This will all happen under a mutex so we don't have to be afraid of
     // somebody else deleting it.
-    if (cfd->UnrefAndTryDelete()) {
+    if (cfd->Unref()) {
       // This was the last reference of the column family, so no need to
       // compact.
+      delete cfd;
       return Status::OK();
     }
 
@@ -2670,8 +2673,7 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
                            f->largest, f->fd.smallest_seqno,
                            f->fd.largest_seqno, f->marked_for_compaction,
                            f->oldest_blob_file_number, f->oldest_ancester_time,
-                           f->file_creation_time, f->file_checksum,
-                           f->file_checksum_func_name);
+                           f->file_creation_time);
 
         ROCKS_LOG_BUFFER(
             log_buffer,
@@ -2750,7 +2752,7 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
     assert(is_snapshot_supported_ || snapshots_.empty());
     CompactionJob compaction_job(
         job_context->job_id, c.get(), immutable_db_options_,
-        file_options_for_compaction_, versions_.get(), &shutting_down_,
+        env_options_for_compaction_, versions_.get(), &shutting_down_,
         preserve_deletes_seqnum_.load(), log_buffer, directories_.GetDbDir(),
         GetDataDir(c->column_family_data(), c->output_path_id()), stats_,
         &mutex_, &error_handler_, snapshot_seqs,
@@ -3113,4 +3115,4 @@ void DBImpl::GetSnapshotContext(
   }
   *snapshot_seqs = snapshots_.GetAll(earliest_write_conflict_snapshot);
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

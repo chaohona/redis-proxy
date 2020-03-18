@@ -26,7 +26,6 @@ int main() {
 #include "util/gflags_compat.h"
 #include "util/hash.h"
 #include "util/random.h"
-#include "util/stderr_logger.h"
 #include "util/stop_watch.h"
 
 using GFLAGS_NAMESPACE::ParseCommandLineFlags;
@@ -36,15 +35,10 @@ using GFLAGS_NAMESPACE::SetUsageMessage;
 DEFINE_uint32(seed, 0, "Seed for random number generators");
 
 DEFINE_double(working_mem_size_mb, 200,
-              "MB of memory to get up to among all filters, unless "
-              "m_keys_total_max is specified.");
+              "MB of memory to get up to among all filters");
 
 DEFINE_uint32(average_keys_per_filter, 10000,
               "Average number of keys per filter");
-
-DEFINE_double(vary_key_count_ratio, 0.4,
-              "Vary number of keys by up to +/- vary_key_count_ratio * "
-              "average_keys_per_filter.");
 
 DEFINE_uint32(key_size, 24, "Average number of bytes for each key");
 
@@ -62,20 +56,12 @@ DEFINE_double(bits_per_key, 10.0, "Bits per key setting for filters");
 
 DEFINE_double(m_queries, 200, "Millions of queries for each test mode");
 
-DEFINE_double(m_keys_total_max, 0,
-              "Maximum total keys added to filters, in millions. "
-              "0 (default) disables. Non-zero overrides working_mem_size_mb "
-              "option.");
-
 DEFINE_bool(use_full_block_reader, false,
             "Use FullFilterBlockReader interface rather than FilterBitsReader");
 
 DEFINE_bool(use_plain_table_bloom, false,
             "Use PlainTableBloom structure and interface rather than "
             "FilterBitsReader/FullFilterBlockReader");
-
-DEFINE_bool(new_builder, false,
-            "Whether to create a new builder for each new filter");
 
 DEFINE_uint32(impl, 0,
               "Select filter implementation. Without -use_plain_table_bloom:"
@@ -97,8 +83,6 @@ DEFINE_bool(legend, false,
             "Print more information about interpreting results instead of "
             "running tests");
 
-DEFINE_uint32(runs, 1, "Number of times to rebuild and run benchmark tests");
-
 void _always_assert_fail(int line, const char *file, const char *expr) {
   fprintf(stderr, "%s: %d: Assertion %s failed\n", file, line, expr);
   abort();
@@ -107,32 +91,25 @@ void _always_assert_fail(int line, const char *file, const char *expr) {
 #define ALWAYS_ASSERT(cond) \
   ((cond) ? (void)0 : ::_always_assert_fail(__LINE__, __FILE__, #cond))
 
-#ifndef NDEBUG
-// This could affect build times enough that we should not include it for
-// accurate speed tests
-#define PREDICT_FP_RATE
-#endif
-
-using ROCKSDB_NAMESPACE::Arena;
-using ROCKSDB_NAMESPACE::BlockContents;
-using ROCKSDB_NAMESPACE::BloomFilterPolicy;
-using ROCKSDB_NAMESPACE::BloomHash;
-using ROCKSDB_NAMESPACE::BuiltinFilterBitsBuilder;
-using ROCKSDB_NAMESPACE::CachableEntry;
-using ROCKSDB_NAMESPACE::EncodeFixed32;
-using ROCKSDB_NAMESPACE::fastrange32;
-using ROCKSDB_NAMESPACE::FilterBitsReader;
-using ROCKSDB_NAMESPACE::FilterBuildingContext;
-using ROCKSDB_NAMESPACE::FullFilterBlockReader;
-using ROCKSDB_NAMESPACE::GetSliceHash;
-using ROCKSDB_NAMESPACE::GetSliceHash64;
-using ROCKSDB_NAMESPACE::Lower32of64;
-using ROCKSDB_NAMESPACE::ParsedFullFilterBlock;
-using ROCKSDB_NAMESPACE::PlainTableBloomV1;
-using ROCKSDB_NAMESPACE::Random32;
-using ROCKSDB_NAMESPACE::Slice;
-using ROCKSDB_NAMESPACE::StderrLogger;
-using ROCKSDB_NAMESPACE::mock::MockBlockBasedTableTester;
+using rocksdb::Arena;
+using rocksdb::BlockContents;
+using rocksdb::BloomFilterPolicy;
+using rocksdb::BloomHash;
+using rocksdb::CachableEntry;
+using rocksdb::EncodeFixed32;
+using rocksdb::fastrange32;
+using rocksdb::FilterBitsBuilder;
+using rocksdb::FilterBitsReader;
+using rocksdb::FilterBuildingContext;
+using rocksdb::FullFilterBlockReader;
+using rocksdb::GetSliceHash;
+using rocksdb::GetSliceHash64;
+using rocksdb::Lower32of64;
+using rocksdb::ParsedFullFilterBlock;
+using rocksdb::PlainTableBloomV1;
+using rocksdb::Random32;
+using rocksdb::Slice;
+using rocksdb::mock::MockBlockBasedTableTester;
 
 struct KeyMaker {
   KeyMaker(size_t avg_size)
@@ -263,19 +240,15 @@ struct FilterBench : public MockBlockBasedTableTester {
   Random32 random_;
   std::ostringstream fp_rate_report_;
   Arena arena_;
-  StderrLogger stderr_logger_;
-  double m_queries_;
 
   FilterBench()
       : MockBlockBasedTableTester(new BloomFilterPolicy(
             FLAGS_bits_per_key,
             static_cast<BloomFilterPolicy::Mode>(FLAGS_impl))),
-        random_(FLAGS_seed),
-        m_queries_(0) {
+        random_(FLAGS_seed) {
     for (uint32_t i = 0; i < FLAGS_batch_size; ++i) {
       kms_.emplace_back(FLAGS_key_size < 8 ? 8 : FLAGS_key_size);
     }
-    ioptions_.info_log = &stderr_logger_;
   }
 
   void Go();
@@ -305,63 +278,38 @@ void FilterBench::Go() {
     }
   }
 
-  if (FLAGS_vary_key_count_ratio < 0.0 || FLAGS_vary_key_count_ratio > 1.0) {
-    throw std::runtime_error("-vary_key_count_ratio must be >= 0.0 and <= 1.0");
+  std::unique_ptr<FilterBitsBuilder> builder;
+  if (!FLAGS_use_plain_table_bloom && FLAGS_impl != 1) {
+    builder.reset(GetBuilder());
   }
 
-  // For example, average_keys_per_filter = 100, vary_key_count_ratio = 0.1.
-  // Varys up to +/- 10 keys. variance_range = 21 (generating value 0..20).
-  // variance_offset = 10, so value - offset average value is always 0.
-  const uint32_t variance_range =
-      1 + 2 * static_cast<uint32_t>(FLAGS_vary_key_count_ratio *
-                                    FLAGS_average_keys_per_filter);
-  const uint32_t variance_offset = variance_range / 2;
+  uint32_t variance_mask = 1;
+  while (variance_mask * variance_mask * 4 < FLAGS_average_keys_per_filter) {
+    variance_mask = variance_mask * 2 + 1;
+  }
 
   const std::vector<TestMode> &testModes =
       FLAGS_best_case ? bestCaseTestModes
                       : FLAGS_quick ? quickTestModes : allTestModes;
-
-  m_queries_ = FLAGS_m_queries;
-  double working_mem_size_mb = FLAGS_working_mem_size_mb;
   if (FLAGS_quick) {
-    m_queries_ /= 7.0;
+    FLAGS_m_queries /= 7.0;
   } else if (FLAGS_best_case) {
-    m_queries_ /= 3.0;
-    working_mem_size_mb /= 10.0;
+    FLAGS_m_queries /= 3.0;
+    FLAGS_working_mem_size_mb /= 10.0;
   }
 
   std::cout << "Building..." << std::endl;
 
-  std::unique_ptr<BuiltinFilterBitsBuilder> builder;
-
   size_t total_memory_used = 0;
   size_t total_keys_added = 0;
-#ifdef PREDICT_FP_RATE
-  double weighted_predicted_fp_rate = 0.0;
-#endif
-  size_t max_total_keys;
-  size_t max_mem;
-  if (FLAGS_m_keys_total_max > 0) {
-    max_total_keys = static_cast<size_t>(1000000 * FLAGS_m_keys_total_max);
-    max_mem = SIZE_MAX;
-  } else {
-    max_total_keys = SIZE_MAX;
-    max_mem = static_cast<size_t>(1024 * 1024 * working_mem_size_mb);
-  }
 
-  ROCKSDB_NAMESPACE::StopWatchNano timer(ROCKSDB_NAMESPACE::Env::Default(),
-                                         true);
+  rocksdb::StopWatchNano timer(rocksdb::Env::Default(), true);
 
-  infos_.clear();
-  while ((working_mem_size_mb == 0 || total_memory_used < max_mem) &&
-         total_keys_added < max_total_keys) {
+  while (total_memory_used < 1024 * 1024 * FLAGS_working_mem_size_mb) {
     uint32_t filter_id = random_.Next();
     uint32_t keys_to_add = FLAGS_average_keys_per_filter +
-                           fastrange32(random_.Next(), variance_range) -
-                           variance_offset;
-    if (max_total_keys - total_keys_added < keys_to_add) {
-      keys_to_add = static_cast<uint32_t>(max_total_keys - total_keys_added);
-    }
+                           (random_.Next() & variance_mask) -
+                           (variance_mask / 2);
     infos_.emplace_back();
     FilterInfo &info = infos_.back();
     info.filter_id_ = filter_id;
@@ -369,29 +317,18 @@ void FilterBench::Go() {
     if (FLAGS_use_plain_table_bloom) {
       info.plain_table_bloom_.reset(new PlainTableBloomV1());
       info.plain_table_bloom_->SetTotalBits(
-          &arena_, static_cast<uint32_t>(keys_to_add * FLAGS_bits_per_key),
-          FLAGS_impl, 0 /*huge_page*/, nullptr /*logger*/);
+          &arena_, keys_to_add * FLAGS_bits_per_key, FLAGS_impl,
+          0 /*huge_page*/, nullptr /*logger*/);
       for (uint32_t i = 0; i < keys_to_add; ++i) {
         uint32_t hash = GetSliceHash(kms_[0].Get(filter_id, i));
         info.plain_table_bloom_->AddHash(hash);
       }
       info.filter_ = info.plain_table_bloom_->GetRawData();
     } else {
-      if (!builder) {
-        builder.reset(&dynamic_cast<BuiltinFilterBitsBuilder &>(*GetBuilder()));
-      }
       for (uint32_t i = 0; i < keys_to_add; ++i) {
         builder->AddKey(kms_[0].Get(filter_id, i));
       }
       info.filter_ = builder->Finish(&info.owner_);
-#ifdef PREDICT_FP_RATE
-      weighted_predicted_fp_rate +=
-          keys_to_add *
-          builder->EstimatedFpRate(keys_to_add, info.filter_.size());
-#endif
-      if (FLAGS_new_builder) {
-        builder.reset();
-      }
       info.reader_.reset(
           table_options_.filter_policy->GetFilterBitsReader(info.filter_));
       CachableEntry<ParsedFullFilterBlock> block(
@@ -415,11 +352,6 @@ void FilterBench::Go() {
 
   double bpk = total_memory_used * 8.0 / total_keys_added;
   std::cout << "Bits/key actual: " << bpk << std::endl;
-#ifdef PREDICT_FP_RATE
-  std::cout << "Predicted FP rate %: "
-            << 100.0 * (weighted_predicted_fp_rate / total_keys_added)
-            << std::endl;
-#endif
   if (!FLAGS_quick && !FLAGS_best_case) {
     double tolerable_rate = std::pow(2.0, -(bpk - 1.0) / (1.4 + bpk / 50.0));
     std::cout << "Best possible FP rate %: " << 100.0 * std::pow(2.0, -bpk)
@@ -430,7 +362,7 @@ void FilterBench::Go() {
     std::cout << "Verifying..." << std::endl;
 
     uint32_t outside_q_per_f =
-        static_cast<uint32_t>(m_queries_ * 1000000 / infos_.size());
+        static_cast<uint32_t>(FLAGS_m_queries * 1000000 / infos_.size());
     uint64_t fps = 0;
     for (uint32_t i = 0; i < infos_.size(); ++i) {
       FilterInfo &info = infos_[i];
@@ -529,7 +461,8 @@ double FilterBench::RandomQueryTest(uint32_t inside_threshold, bool dry_run,
 
   uint32_t num_infos = static_cast<uint32_t>(infos_.size());
   uint32_t dry_run_hash = 0;
-  uint64_t max_queries = static_cast<uint64_t>(m_queries_ * 1000000 + 0.50);
+  uint64_t max_queries =
+      static_cast<uint64_t>(FLAGS_m_queries * 1000000 + 0.50);
   // Some filters may be considered secondary in order to implement skewed
   // queries. num_primary_filters is the number that are to be treated as
   // equal, and any remainder will be treated as secondary.
@@ -568,8 +501,7 @@ double FilterBench::RandomQueryTest(uint32_t inside_threshold, bool dry_run,
     batch_slice_ptrs[i] = &batch_slices[i];
   }
 
-  ROCKSDB_NAMESPACE::StopWatchNano timer(ROCKSDB_NAMESPACE::Env::Default(),
-                                         true);
+  rocksdb::StopWatchNano timer(rocksdb::Env::Default(), true);
 
   for (uint64_t q = 0; q < max_queries; q += batch_size) {
     bool inside_this_time = random_.Next() <= inside_threshold;
@@ -636,7 +568,7 @@ double FilterBench::RandomQueryTest(uint32_t inside_threshold, bool dry_run,
             may_match = info.full_block_reader_->KeyMayMatch(
                 batch_slices[i],
                 /*prefix_extractor=*/nullptr,
-                /*block_offset=*/ROCKSDB_NAMESPACE::kNotValid,
+                /*block_offset=*/rocksdb::kNotValid,
                 /*no_io=*/false, /*const_ikey_ptr=*/nullptr,
                 /*get_context=*/nullptr,
                 /*lookup_context=*/nullptr);
@@ -702,7 +634,7 @@ double FilterBench::RandomQueryTest(uint32_t inside_threshold, bool dry_run,
 }
 
 int main(int argc, char **argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   SetUsageMessage(std::string("\nUSAGE:\n") + std::string(argv[0]) +
                   " [-quick] [OTHER OPTIONS]...");
   ParseCommandLineFlags(&argc, &argv, true);
@@ -738,11 +670,7 @@ int main(int argc, char **argv) {
         << "\n      of queries." << std::endl;
   } else {
     FilterBench b;
-    for (uint32_t i = 0; i < FLAGS_runs; ++i) {
-      b.Go();
-      FLAGS_seed += 100;
-      b.random_.Seed(FLAGS_seed);
-    }
+    b.Go();
   }
 
   return 0;

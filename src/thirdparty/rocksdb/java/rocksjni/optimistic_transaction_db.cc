@@ -4,7 +4,7 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the "bridge" between Java and C++
-// for ROCKSDB_NAMESPACE::TransactionDB.
+// for rocksdb::TransactionDB.
 
 #include <jni.h>
 
@@ -29,18 +29,16 @@ jlong Java_org_rocksdb_OptimisticTransactionDB_open__JLjava_lang_String_2(
     return 0;
   }
 
-  auto* options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::Options*>(joptions_handle);
-  ROCKSDB_NAMESPACE::OptimisticTransactionDB* otdb = nullptr;
-  ROCKSDB_NAMESPACE::Status s =
-      ROCKSDB_NAMESPACE::OptimisticTransactionDB::Open(*options, db_path,
-                                                       &otdb);
+  auto* options = reinterpret_cast<rocksdb::Options*>(joptions_handle);
+  rocksdb::OptimisticTransactionDB* otdb = nullptr;
+  rocksdb::Status s =
+      rocksdb::OptimisticTransactionDB::Open(*options, db_path, &otdb);
   env->ReleaseStringUTFChars(jdb_path, db_path);
 
   if (s.ok()) {
     return reinterpret_cast<jlong>(otdb);
   } else {
-    ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(env, s);
+    rocksdb::RocksDBExceptionJni::ThrowNew(env, s);
     return 0;
   }
 }
@@ -60,7 +58,7 @@ Java_org_rocksdb_OptimisticTransactionDB_open__JLjava_lang_String_2_3_3B_3J(
     return nullptr;
   }
 
-  std::vector<ROCKSDB_NAMESPACE::ColumnFamilyDescriptor> column_families;
+  std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   const jsize len_cols = env->GetArrayLength(jcolumn_names);
   if (len_cols > 0) {
     if (env->EnsureLocalCapacity(len_cols) != 0) {
@@ -106,10 +104,10 @@ Java_org_rocksdb_OptimisticTransactionDB_open__JLjava_lang_String_2_3_3B_3J(
 
       const std::string cf_name(reinterpret_cast<char*>(jcf_name),
                                 jcf_name_len);
-      const ROCKSDB_NAMESPACE::ColumnFamilyOptions* cf_options =
-          reinterpret_cast<ROCKSDB_NAMESPACE::ColumnFamilyOptions*>(jco[i]);
+      const rocksdb::ColumnFamilyOptions* cf_options =
+          reinterpret_cast<rocksdb::ColumnFamilyOptions*>(jco[i]);
       column_families.push_back(
-          ROCKSDB_NAMESPACE::ColumnFamilyDescriptor(cf_name, *cf_options));
+          rocksdb::ColumnFamilyDescriptor(cf_name, *cf_options));
 
       env->ReleaseByteArrayElements(jcn_ba, jcf_name, JNI_ABORT);
       env->DeleteLocalRef(jcn);
@@ -117,13 +115,11 @@ Java_org_rocksdb_OptimisticTransactionDB_open__JLjava_lang_String_2_3_3B_3J(
     env->ReleaseLongArrayElements(jcolumn_options_handles, jco, JNI_ABORT);
   }
 
-  auto* db_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::DBOptions*>(jdb_options_handle);
-  std::vector<ROCKSDB_NAMESPACE::ColumnFamilyHandle*> handles;
-  ROCKSDB_NAMESPACE::OptimisticTransactionDB* otdb = nullptr;
-  const ROCKSDB_NAMESPACE::Status s =
-      ROCKSDB_NAMESPACE::OptimisticTransactionDB::Open(
-          *db_options, db_path, column_families, &handles, &otdb);
+  auto* db_options = reinterpret_cast<rocksdb::DBOptions*>(jdb_options_handle);
+  std::vector<rocksdb::ColumnFamilyHandle*> handles;
+  rocksdb::OptimisticTransactionDB* otdb = nullptr;
+  const rocksdb::Status s = rocksdb::OptimisticTransactionDB::Open(
+      *db_options, db_path, column_families, &handles, &otdb);
 
   env->ReleaseStringUTFChars(jdb_path, db_path);
 
@@ -150,7 +146,7 @@ Java_org_rocksdb_OptimisticTransactionDB_open__JLjava_lang_String_2_3_3B_3J(
     return jresults;
   }
 
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(env, s);
+  rocksdb::RocksDBExceptionJni::ThrowNew(env, s);
   return nullptr;
 }
 
@@ -162,7 +158,7 @@ Java_org_rocksdb_OptimisticTransactionDB_open__JLjava_lang_String_2_3_3B_3J(
 void Java_org_rocksdb_OptimisticTransactionDB_disposeInternal(
     JNIEnv *, jobject, jlong jhandle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   assert(optimistic_txn_db != nullptr);
   delete optimistic_txn_db;
 }
@@ -175,10 +171,10 @@ void Java_org_rocksdb_OptimisticTransactionDB_disposeInternal(
 void Java_org_rocksdb_OptimisticTransactionDB_closeDatabase(
     JNIEnv* env, jclass, jlong jhandle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   assert(optimistic_txn_db != nullptr);
-  ROCKSDB_NAMESPACE::Status s = optimistic_txn_db->Close();
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(env, s);
+  rocksdb::Status s = optimistic_txn_db->Close();
+  rocksdb::RocksDBExceptionJni::ThrowNew(env, s);
 }
 
 /*
@@ -189,10 +185,10 @@ void Java_org_rocksdb_OptimisticTransactionDB_closeDatabase(
 jlong Java_org_rocksdb_OptimisticTransactionDB_beginTransaction__JJ(
     JNIEnv*, jobject, jlong jhandle, jlong jwrite_options_handle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   auto* write_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::WriteOptions*>(jwrite_options_handle);
-  ROCKSDB_NAMESPACE::Transaction* txn =
+      reinterpret_cast<rocksdb::WriteOptions*>(jwrite_options_handle);
+  rocksdb::Transaction* txn =
       optimistic_txn_db->BeginTransaction(*write_options);
   return reinterpret_cast<jlong>(txn);
 }
@@ -206,13 +202,13 @@ jlong Java_org_rocksdb_OptimisticTransactionDB_beginTransaction__JJJ(
     JNIEnv* /*env*/, jobject /*jobj*/, jlong jhandle,
     jlong jwrite_options_handle, jlong joptimistic_txn_options_handle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   auto* write_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::WriteOptions*>(jwrite_options_handle);
+      reinterpret_cast<rocksdb::WriteOptions*>(jwrite_options_handle);
   auto* optimistic_txn_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionOptions*>(
+      reinterpret_cast<rocksdb::OptimisticTransactionOptions*>(
           joptimistic_txn_options_handle);
-  ROCKSDB_NAMESPACE::Transaction* txn = optimistic_txn_db->BeginTransaction(
+  rocksdb::Transaction* txn = optimistic_txn_db->BeginTransaction(
       *write_options, *optimistic_txn_options);
   return reinterpret_cast<jlong>(txn);
 }
@@ -226,13 +222,12 @@ jlong Java_org_rocksdb_OptimisticTransactionDB_beginTransaction_1withOld__JJJ(
     JNIEnv*, jobject, jlong jhandle, jlong jwrite_options_handle,
     jlong jold_txn_handle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   auto* write_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::WriteOptions*>(jwrite_options_handle);
-  auto* old_txn =
-      reinterpret_cast<ROCKSDB_NAMESPACE::Transaction*>(jold_txn_handle);
-  ROCKSDB_NAMESPACE::OptimisticTransactionOptions optimistic_txn_options;
-  ROCKSDB_NAMESPACE::Transaction* txn = optimistic_txn_db->BeginTransaction(
+      reinterpret_cast<rocksdb::WriteOptions*>(jwrite_options_handle);
+  auto* old_txn = reinterpret_cast<rocksdb::Transaction*>(jold_txn_handle);
+  rocksdb::OptimisticTransactionOptions optimistic_txn_options;
+  rocksdb::Transaction* txn = optimistic_txn_db->BeginTransaction(
       *write_options, optimistic_txn_options, old_txn);
 
   // RocksJava relies on the assumption that
@@ -252,15 +247,14 @@ jlong Java_org_rocksdb_OptimisticTransactionDB_beginTransaction_1withOld__JJJJ(
     JNIEnv*, jobject, jlong jhandle, jlong jwrite_options_handle,
     jlong joptimistic_txn_options_handle, jlong jold_txn_handle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   auto* write_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::WriteOptions*>(jwrite_options_handle);
+      reinterpret_cast<rocksdb::WriteOptions*>(jwrite_options_handle);
   auto* optimistic_txn_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionOptions*>(
+      reinterpret_cast<rocksdb::OptimisticTransactionOptions*>(
           joptimistic_txn_options_handle);
-  auto* old_txn =
-      reinterpret_cast<ROCKSDB_NAMESPACE::Transaction*>(jold_txn_handle);
-  ROCKSDB_NAMESPACE::Transaction* txn = optimistic_txn_db->BeginTransaction(
+  auto* old_txn = reinterpret_cast<rocksdb::Transaction*>(jold_txn_handle);
+  rocksdb::Transaction* txn = optimistic_txn_db->BeginTransaction(
       *write_options, *optimistic_txn_options, old_txn);
 
   // RocksJava relies on the assumption that
@@ -279,6 +273,6 @@ jlong Java_org_rocksdb_OptimisticTransactionDB_beginTransaction_1withOld__JJJJ(
 jlong Java_org_rocksdb_OptimisticTransactionDB_getBaseDB(
     JNIEnv*, jobject, jlong jhandle) {
   auto* optimistic_txn_db =
-      reinterpret_cast<ROCKSDB_NAMESPACE::OptimisticTransactionDB*>(jhandle);
+      reinterpret_cast<rocksdb::OptimisticTransactionDB*>(jhandle);
   return reinterpret_cast<jlong>(optimistic_txn_db->GetBaseDB());
 }

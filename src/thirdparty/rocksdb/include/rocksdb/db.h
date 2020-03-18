@@ -37,7 +37,7 @@
 #define ROCKSDB_DEPRECATED_FUNC __declspec(deprecated)
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 struct Options;
 struct DBOptions;
@@ -57,7 +57,6 @@ class TraceWriter;
 #ifdef ROCKSDB_LITE
 class CompactionJobInfo;
 #endif
-class FileSystem;
 
 extern const std::string kDefaultColumnFamilyName;
 extern const std::string kPersistentStatsColumnFamilyName;
@@ -155,7 +154,7 @@ class DB {
   // read only, you can specify only a subset of column families in the
   // database that should be opened. However, you always need to specify default
   // column family. The default column family name is 'default' and it's stored
-  // in ROCKSDB_NAMESPACE::kDefaultColumnFamilyName
+  // in rocksdb::kDefaultColumnFamilyName
   //
   // Not supported in ROCKSDB_LITE, in which case the function will
   // return Status::NotSupported.
@@ -221,7 +220,7 @@ class DB {
   // ListColumnFamilies(). Also, you can open only a subset of column families
   // for read-only access.
   // The default column family name is 'default' and it's stored
-  // in ROCKSDB_NAMESPACE::kDefaultColumnFamilyName.
+  // in rocksdb::kDefaultColumnFamilyName.
   // If everything is OK, handles will on return be the same size
   // as column_families --- handles[i] will be a handle that you
   // will use to operate on column family column_family[i].
@@ -388,9 +387,6 @@ class DB {
   // If the database contains an entry for "key" store the
   // corresponding value in *value and return OK.
   //
-  // If timestamp is enabled and a non-null timestamp pointer is passed in,
-  // timestamp is returned.
-  //
   // If there is no entry for "key" leave *value unchanged and return
   // a status for which Status::IsNotFound() returns true.
   //
@@ -413,32 +409,6 @@ class DB {
   virtual Status Get(const ReadOptions& options, const Slice& key,
                      std::string* value) {
     return Get(options, DefaultColumnFamily(), key, value);
-  }
-
-  // Get() methods that return timestamp. Derived DB classes don't need to worry
-  // about this group of methods if they don't care about timestamp feature.
-  virtual inline Status Get(const ReadOptions& options,
-                            ColumnFamilyHandle* column_family, const Slice& key,
-                            std::string* value, std::string* timestamp) {
-    assert(value != nullptr);
-    PinnableSlice pinnable_val(value);
-    assert(!pinnable_val.IsPinned());
-    auto s = Get(options, column_family, key, &pinnable_val, timestamp);
-    if (s.ok() && pinnable_val.IsPinned()) {
-      value->assign(pinnable_val.data(), pinnable_val.size());
-    }  // else value is already assigned
-    return s;
-  }
-  virtual Status Get(const ReadOptions& /*options*/,
-                     ColumnFamilyHandle* /*column_family*/,
-                     const Slice& /*key*/, PinnableSlice* /*value*/,
-                     std::string* /*timestamp*/) {
-    return Status::NotSupported(
-        "Get() that returns timestamp is not implemented.");
-  }
-  virtual Status Get(const ReadOptions& options, const Slice& key,
-                     std::string* value, std::string* timestamp) {
-    return Get(options, DefaultColumnFamily(), key, value, timestamp);
   }
 
   // Returns all the merge operands corresponding to the key. If the
@@ -571,31 +541,15 @@ class DB {
   virtual bool KeyMayExist(const ReadOptions& /*options*/,
                            ColumnFamilyHandle* /*column_family*/,
                            const Slice& /*key*/, std::string* /*value*/,
-                           std::string* /*timestamp*/,
                            bool* value_found = nullptr) {
     if (value_found != nullptr) {
       *value_found = false;
     }
     return true;
   }
-
-  virtual bool KeyMayExist(const ReadOptions& options,
-                           ColumnFamilyHandle* column_family, const Slice& key,
-                           std::string* value, bool* value_found = nullptr) {
-    return KeyMayExist(options, column_family, key, value,
-                       /*timestamp=*/nullptr, value_found);
-  }
-
   virtual bool KeyMayExist(const ReadOptions& options, const Slice& key,
                            std::string* value, bool* value_found = nullptr) {
     return KeyMayExist(options, DefaultColumnFamily(), key, value, value_found);
-  }
-
-  virtual bool KeyMayExist(const ReadOptions& options, const Slice& key,
-                           std::string* value, std::string* timestamp,
-                           bool* value_found = nullptr) {
-    return KeyMayExist(options, DefaultColumnFamily(), key, value, timestamp,
-                       value_found);
   }
 
   // Return a heap-allocated iterator over the contents of the database.
@@ -760,10 +714,6 @@ class DB {
     //  "rocksdb.oldest-snapshot-time" - returns number representing unix
     //      timestamp of oldest unreleased snapshot.
     static const std::string kOldestSnapshotTime;
-
-    //  "rocksdb.oldest-snapshot-sequence" - returns number representing
-    //      sequence number of oldest unreleased snapshot.
-    static const std::string kOldestSnapshotSequence;
 
     //  "rocksdb.num-live-versions" - returns number of live versions. `Version`
     //      is an internal data structure. See version_set.h for details. More
@@ -1117,8 +1067,6 @@ class DB {
   // Get Env object from the DB
   virtual Env* GetEnv() const = 0;
 
-  virtual FileSystem* GetFileSystem() const;
-
   // Get DB Options that we use.  During the process of opening the
   // column family, the options provided when calling DB::Open() or
   // DB::CreateColumnFamily() will have been "sanitized" and transformed
@@ -1455,9 +1403,9 @@ class DB {
 
 #endif  // ROCKSDB_LITE
 
-  // Returns the unique ID which is read from IDENTITY file during the opening
-  // of database by setting in the identity variable
-  // Returns Status::OK if identity could be set properly
+  // Sets the globally unique ID created at database creation time by invoking
+  // Env::GenerateUniqueId(), in identity. Returns Status::OK if identity could
+  // be set properly
   virtual Status GetDbIdentity(std::string& identity) const = 0;
 
   // Returns default column family handle
@@ -1567,4 +1515,4 @@ Status RepairDB(const std::string& dbname, const Options& options);
 
 #endif
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

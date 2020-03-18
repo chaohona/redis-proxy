@@ -7,7 +7,7 @@
 
 #include "rocksdb/trace_reader_writer.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class RandomAccessFileReader;
 class WritableFileWriter;
@@ -45,4 +45,4 @@ class FileTraceWriter : public TraceWriter {
   std::unique_ptr<WritableFileWriter> file_writer_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

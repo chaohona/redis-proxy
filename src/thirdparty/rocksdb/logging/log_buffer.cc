@@ -8,7 +8,7 @@
 #include "port/sys_time.h"
 #include "port/port.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 LogBuffer::LogBuffer(const InfoLogLevel log_level,
                      Logger*info_log)
@@ -81,12 +81,13 @@ void LogToBuffer(LogBuffer* log_buffer, size_t max_log_size, const char* format,
 }
 
 void LogToBuffer(LogBuffer* log_buffer, const char* format, ...) {
+  const size_t kDefaultMaxLogSize = 512;
   if (log_buffer != nullptr) {
     va_list ap;
     va_start(ap, format);
-    log_buffer->AddLogToBuffer(LogBuffer::kDefaultMaxLogSize, format, ap);
+    log_buffer->AddLogToBuffer(kDefaultMaxLogSize, format, ap);
     va_end(ap);
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

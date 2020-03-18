@@ -39,7 +39,7 @@
 
 using std::unique_ptr;
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class PlainTableKeyDecoderTest : public testing::Test {};
 
 TEST_F(PlainTableKeyDecoderTest, ReadNonMmap) {
@@ -401,17 +401,19 @@ TEST_P(PlainTableDBTest, BadOptions1) {
   // Bad attempt to re-open without a prefix extractor
   Options options = CurrentOptions();
   options.prefix_extractor.reset();
+  Reopen(&options);
   ASSERT_EQ(
       "Invalid argument: Prefix extractor is missing when opening a PlainTable "
       "built using a prefix extractor",
-      TryReopen(&options).ToString());
+      Get("1000000000000foo"));
 
   // Bad attempt to re-open with different prefix extractor
   options.prefix_extractor.reset(NewFixedPrefixTransform(6));
+  Reopen(&options);
   ASSERT_EQ(
       "Invalid argument: Prefix extractor given doesn't match the one used to "
       "build PlainTable",
-      TryReopen(&options).ToString());
+      Get("1000000000000foo"));
 
   // Correct prefix extractor
   options.prefix_extractor.reset(NewFixedPrefixTransform(8));
@@ -653,9 +655,9 @@ TEST_P(PlainTableDBTest, Immortal) {
     dbfull()->TEST_FlushMemTable();
 
     int copied = 0;
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+    rocksdb::SyncPoint::GetInstance()->SetCallBack(
         "GetContext::SaveValue::PinSelf", [&](void* /*arg*/) { copied++; });
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+    rocksdb::SyncPoint::GetInstance()->EnableProcessing();
     ASSERT_EQ("b", Get("0000000000000bar"));
     ASSERT_EQ("v1", Get("1000000000000foo"));
     ASSERT_EQ(2, copied);
@@ -672,7 +674,7 @@ TEST_P(PlainTableDBTest, Immortal) {
     } else {
       ASSERT_EQ(2, copied);
     }
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+    rocksdb::SyncPoint::GetInstance()->DisableProcessing();
   }
 }
 
@@ -1321,13 +1323,11 @@ TEST_P(PlainTableDBTest, AdaptiveTable) {
   dbfull()->TEST_FlushMemTable();
 
   options.create_if_missing = false;
+  std::shared_ptr<TableFactory> dummy_factory;
   std::shared_ptr<TableFactory> block_based_factory(
       NewBlockBasedTableFactory());
-  std::shared_ptr<TableFactory> plain_table_factory(
-      NewPlainTableFactory());
-  std::shared_ptr<TableFactory> dummy_factory;
   options.table_factory.reset(NewAdaptiveTableFactory(
-      block_based_factory, block_based_factory, plain_table_factory));
+      block_based_factory, dummy_factory, dummy_factory));
   Reopen(&options);
   ASSERT_EQ("v3", Get("1000000000000foo"));
   ASSERT_EQ("v2", Get("0000000000000bar"));
@@ -1344,12 +1344,10 @@ TEST_P(PlainTableDBTest, AdaptiveTable) {
   ASSERT_EQ("v4", Get("2000000000000foo"));
   ASSERT_EQ("v5", Get("3000000000000bar"));
 
-  options.paranoid_checks = false;
   options.table_factory.reset(NewBlockBasedTableFactory());
   Reopen(&options);
   ASSERT_NE("v3", Get("1000000000000foo"));
 
-  options.paranoid_checks = false;
   options.table_factory.reset(NewPlainTableFactory());
   Reopen(&options);
   ASSERT_NE("v5", Get("3000000000000bar"));
@@ -1357,7 +1355,7 @@ TEST_P(PlainTableDBTest, AdaptiveTable) {
 
 INSTANTIATE_TEST_CASE_P(PlainTableDBTest, PlainTableDBTest, ::testing::Bool());
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

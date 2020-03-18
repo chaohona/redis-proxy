@@ -20,13 +20,10 @@
 #include "util/random.h"
 #include "util/rate_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 Status FilePrefetchBuffer::Prefetch(RandomAccessFileReader* reader,
                                     uint64_t offset, size_t n,
                                     bool for_compaction) {
-  if (!enable_ || reader == nullptr) {
-    return Status::OK();
-  }
   size_t alignment = reader->file()->GetRequiredBufferAlignment();
   size_t offset_ = static_cast<size_t>(offset);
   uint64_t rounddown_offset = Rounddown(offset_, alignment);
@@ -133,4 +130,4 @@ bool FilePrefetchBuffer::TryReadFromCache(uint64_t offset, size_t n,
   *result = Slice(buffer_.BufferStart() + offset_in_buffer, n);
   return true;
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

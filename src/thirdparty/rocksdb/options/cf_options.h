@@ -13,7 +13,7 @@
 #include "rocksdb/options.h"
 #include "util/compression.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // ImmutableCFOptions is a data struct used by RocksDB internal. It contains a
 // subset of Options that should not be changed during the entire lifetime
@@ -60,8 +60,6 @@ struct ImmutableCFOptions {
   InfoLogLevel info_log_level;
 
   Env* env;
-
-  FileSystem* fs;
 
   // Allow the OS to mmap file for reading sst tables. Default: false
   bool allow_mmap_reads;
@@ -125,8 +123,6 @@ struct ImmutableCFOptions {
   std::vector<DbPath> cf_paths;
 
   std::shared_ptr<ConcurrentTaskLimiter> compaction_thread_limiter;
-
-  FileChecksumFunc* sst_file_checksum_func;
 };
 
 struct MutableCFOptions {
@@ -266,4 +262,4 @@ uint64_t MultiplyCheckOverflow(uint64_t op1, double op2);
 uint64_t MaxFileSizeForLevel(const MutableCFOptions& cf_options,
     int level, CompactionStyle compaction_style, int base_level = 1,
     bool level_compaction_dynamic_level_bytes = false);
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

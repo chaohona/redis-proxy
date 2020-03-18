@@ -21,7 +21,7 @@
 #include "table/block_based/block_builder.h"
 #include "table/format.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // The interface for building index.
 // Instruction for adding a new concrete IndexBuilder:
 //  1. Create a subclass instantiated from IndexBuilder.
@@ -36,7 +36,7 @@ class IndexBuilder {
  public:
   static IndexBuilder* CreateIndexBuilder(
       BlockBasedTableOptions::IndexType index_type,
-      const ROCKSDB_NAMESPACE::InternalKeyComparator* comparator,
+      const rocksdb::InternalKeyComparator* comparator,
       const InternalKeySliceTransform* int_key_slice_transform,
       const bool use_value_delta_encoding,
       const BlockBasedTableOptions& table_opt);
@@ -365,7 +365,7 @@ class HashIndexBuilder : public IndexBuilder {
 class PartitionedIndexBuilder : public IndexBuilder {
  public:
   static PartitionedIndexBuilder* CreateIndexBuilder(
-      const ROCKSDB_NAMESPACE::InternalKeyComparator* comparator,
+      const rocksdb::InternalKeyComparator* comparator,
       const bool use_value_delta_encoding,
       const BlockBasedTableOptions& table_opt);
 
@@ -440,4 +440,4 @@ class PartitionedIndexBuilder : public IndexBuilder {
   bool cut_filter_block = false;
   BlockHandle last_encoded_handle_;
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

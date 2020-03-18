@@ -799,6 +799,17 @@ void loadServerConfigFromString(char *config) {
                 err = sentinelHandleConfiguration(argv+1,argc-1);
                 if (err) goto loaderr;
             }
+        /*******gredis******/
+        } else if (!strcasecmp(argv[0],"aof-time-flag") && argc == 2) {
+            int enable = yesnotoi(argv[1]);
+
+            if (enable == -1) goto loaderr;
+            server.aof_time_flag = enable;
+        } else if (!strcasecmp(argv[0],"aof_tf_skip_num") && argc == 2) {
+            long long ll = atoi(argv[1]);
+            if (ll < 1) goto loaderr;
+            server.aof_tf_skip_num = ll;
+        /********gredis*****/
         } else {
             err = "Bad directive or wrong number of arguments"; goto loaderr;
         }
@@ -1267,7 +1278,16 @@ void configSetCommand(client *c) {
       "maxmemory-policy",server.maxmemory_policy,maxmemory_policy_enum) {
     } config_set_enum_field(
       "appendfsync",server.aof_fsync,aof_fsync_enum) {
+    /*******gredis*******/
+    } config_set_special_field("aof-time-flag") {
+        int enable = yesnotoi(o->ptr);
 
+        if (enable == -1) goto badfmt;
+        server.aof_time_flag = enable;
+    } config_set_special_field("aof_tf_skip_num") {
+        if (getLongLongFromObject(o,&ll) == C_ERR || ll < 1) goto badfmt;
+        server.aof_tf_skip_num = ll;
+    /*******gredis*******/
     /* Everyhing else is an error... */
     } config_set_else {
         addReplyErrorFormat(c,"Unsupported CONFIG parameter: %s",
@@ -1468,6 +1488,12 @@ void configGetCommand(client *c) {
     config_get_bool_field("dynamic-hz",
             server.dynamic_hz);
 
+    /******gredis*******/
+    config_get_bool_field("aof-time-flag",
+            server.aof_time_flag);
+    config_get_numerical_field("aof_tf_skip_num",server.aof_tf_skip_num);
+    /******gredis*******/
+    
     /* Enum values */
     config_get_enum_field("maxmemory-policy",
             server.maxmemory_policy,maxmemory_policy_enum);

@@ -17,7 +17,7 @@
 #include "test_util/testutil.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class CountingLogger : public Logger {
  public:
@@ -95,8 +95,7 @@ class CompactionPickerTest : public testing::Test {
         InternalKey(smallest, smallest_seq, kTypeValue),
         InternalKey(largest, largest_seq, kTypeValue), smallest_seq,
         largest_seq, /* marked_for_compact */ false, kInvalidBlobFileNumber,
-        kUnknownOldestAncesterTime, kUnknownFileCreationTime,
-        kUnknownFileChecksum, kUnknownFileChecksumFuncName);
+        kUnknownOldestAncesterTime, kUnknownFileCreationTime);
     f->compensated_file_size =
         (compensated_file_size != 0) ? compensated_file_size : file_size;
     vstorage_->AddFile(level, f);
@@ -1733,7 +1732,7 @@ TEST_F(CompactionPickerTest, IntraL0ForEarliestSeqno) {
   ASSERT_EQ(0, compaction->output_level());
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

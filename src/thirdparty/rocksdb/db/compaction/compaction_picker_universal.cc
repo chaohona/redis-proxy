@@ -23,7 +23,7 @@
 #include "util/random.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace {
 // A helper class that form universal compactions. The class is used by
 // UniversalCompactionPicker::PickCompaction().
@@ -247,8 +247,7 @@ bool UniversalCompactionBuilder::IsInputFilesNonOverlapping(Compaction* c) {
 
     next.f = nullptr;
 
-    if (c->level(curr.level) != 0 &&
-        curr.index < c->num_input_files(curr.level) - 1) {
+    if (curr.level != 0 && curr.index < c->num_input_files(curr.level) - 1) {
       next.f = c->input(curr.level, curr.index + 1);
       next.level = curr.level;
       next.index = curr.index + 1;
@@ -1100,6 +1099,6 @@ Compaction* UniversalCompactionBuilder::PickPeriodicCompaction() {
 
   return c;
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // !ROCKSDB_LITE

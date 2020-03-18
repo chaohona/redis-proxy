@@ -26,7 +26,7 @@
   #define PLATFORM_UNALIGNED_ACCESS_NOT_ALLOWED
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // The maximum length of a varint in bytes for 64-bit.
 const unsigned int kMaxVarint64Length = 10;
@@ -477,4 +477,4 @@ inline void GetUnaligned(const T *memory, T *value) {
 #endif
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

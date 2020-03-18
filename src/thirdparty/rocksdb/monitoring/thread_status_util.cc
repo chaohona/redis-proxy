@@ -8,7 +8,7 @@
 #include "monitoring/thread_status_updater.h"
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifdef ROCKSDB_USING_THREAD_STATUS
 __thread ThreadStatusUpdater* ThreadStatusUtil::thread_updater_local_cache_ =
@@ -203,4 +203,4 @@ AutoThreadOperationStageUpdater::~AutoThreadOperationStageUpdater() {}
 
 #endif  // ROCKSDB_USING_THREAD_STATUS
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

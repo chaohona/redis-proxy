@@ -32,7 +32,7 @@
 #undef DeleteFile
 #undef GetTickCount
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace port {
 
 // Currently not designed for inheritance but rather a replacement
@@ -163,12 +163,6 @@ public:
 
   virtual Status GetAbsolutePath(const std::string& db_path,
                                  std::string* output_path);
-
-  // This seems to clash with a macro on Windows, so #undef it here
-#undef GetFreeSpace
-
-  // Get the amount of free disk space
-  virtual Status GetFreeSpace(const std::string& path, uint64_t* diskfree);
 
   virtual std::string TimeToString(uint64_t secondsSince1970);
 
@@ -313,12 +307,6 @@ public:
 
   uint64_t GetThreadID() const override;
 
-  // This seems to clash with a macro on Windows, so #undef it here
-#undef GetFreeSpace
-
-  // Get the amount of free disk space
-  Status GetFreeSpace(const std::string& path, uint64_t* diskfree) override;
-
   void SleepForMicroseconds(int micros) override;
 
   // Allow increasing the number of worker threads.
@@ -344,4 +332,4 @@ private:
 };
 
 } // namespace port
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb

@@ -151,7 +151,6 @@ public class MutableDBOptions extends AbstractMutableOptions {
     }
 
     @Override
-    @Deprecated
     public void setBaseBackgroundCompactions(
         final int baseBackgroundCompactions) {
       setInt(DBOption.base_background_compactions,
@@ -164,7 +163,6 @@ public class MutableDBOptions extends AbstractMutableOptions {
     }
 
     @Override
-    @Deprecated
     public MutableDBOptionsBuilder setMaxBackgroundCompactions(
         final int maxBackgroundCompactions) {
       return setInt(DBOption.max_background_compactions,
@@ -172,7 +170,6 @@ public class MutableDBOptions extends AbstractMutableOptions {
     }
 
     @Override
-    @Deprecated
     public int maxBackgroundCompactions() {
       return getInt(DBOption.max_background_compactions);
     }

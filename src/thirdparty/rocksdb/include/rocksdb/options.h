@@ -19,7 +19,6 @@
 #include "rocksdb/advanced_options.h"
 #include "rocksdb/comparator.h"
 #include "rocksdb/env.h"
-#include "rocksdb/file_checksum.h"
 #include "rocksdb/listener.h"
 #include "rocksdb/universal_compaction.h"
 #include "rocksdb/version.h"
@@ -29,7 +28,7 @@
 #undef max
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Cache;
 class CompactionFilter;
@@ -49,7 +48,6 @@ class Slice;
 class Statistics;
 class InternalKeyComparator;
 class WalFilter;
-class FileSystem;
 
 // DB contents are stored in a set of blocks, each of which holds a
 // sequence of key,value pairs.  Each block may be compressed before
@@ -390,16 +388,9 @@ struct DBOptions {
   bool paranoid_checks = true;
 
   // Use the specified object to interact with the environment,
-  // e.g. to read/write files, schedule background work, etc. In the near
-  // future, support for doing storage operations such as read/write files
-  // through env will be deprecated in favor of file_system (see below)
+  // e.g. to read/write files, schedule background work, etc.
   // Default: Env::Default()
   Env* env = Env::Default();
-
-  // Use the specified object to interact with the storage to
-  // read/write files. This is in addition to env. This option should be used
-  // if the desired storage subsystem provides a FileSystem implementation.
-  std::shared_ptr<FileSystem> file_system = nullptr;
 
   // Use to control write rate of flush and compaction. Flush has higher
   // priority than compaction. Rate limiting is disabled if nullptr.
@@ -986,16 +977,6 @@ struct DBOptions {
   // Default: false
   bool skip_stats_update_on_db_open = false;
 
-  // If true, then DB::Open() will not fetch and check sizes of all sst files.
-  // This may significantly speed up startup if there are many sst files,
-  // especially when using non-default Env with expensive GetFileSize().
-  // We'll still check that all required sst files exist.
-  // If paranoid_checks is false, this option is ignored, and sst files are
-  // not checked at all.
-  //
-  // Default: false
-  bool skip_checking_sst_file_sizes_on_db_open = false;
-
   // Recovery mode to control the consistency while replaying WAL
   // Default: kPointInTimeRecovery
   WALRecoveryMode wal_recovery_mode = WALRecoveryMode::kPointInTimeRecovery;
@@ -1123,13 +1104,6 @@ struct DBOptions {
   //
   // Default: 0
   size_t log_readahead_size = 0;
-
-  // If user does NOT provide SST file checksum function, the SST file checksum
-  // will NOT be used. The single checksum instance are shared by options and
-  // file writers. Make sure the algorithm is thread safe.
-  //
-  // Default: nullptr
-  std::shared_ptr<FileChecksumFunc> sst_file_checksum_func = nullptr;
 };
 
 // Options to control the behavior of a database (passed to DB::Open)
@@ -1207,7 +1181,7 @@ struct ReadOptions {
   // "iterate_upper_bound" defines the extent upto which the forward iterator
   // can returns entries. Once the bound is reached, Valid() will be false.
   // "iterate_upper_bound" is exclusive ie the bound value is
-  // not a valid entry. If prefix_extractor is not null, the Seek target
+  // not a valid entry.  If iterator_extractor is not null, the Seek target
   // and iterate_upper_bound need to have the same prefix.
   // This is because ordering is not guaranteed outside of prefix domain.
   //
@@ -1268,13 +1242,6 @@ struct ReadOptions {
   // block based table. It provides a way to read existing data after
   // changing implementation of prefix extractor.
   bool total_order_seek;
-
-  // When true, by default use total_order_seek = true, and RocksDB can
-  // selectively enable prefix seek mode if won't generate a different result
-  // from total_order_seek, based on seek key, and iterator upper bound.
-  // Not suppported in ROCKSDB_LITE mode, in the way that even with value true
-  // prefix mode is not used.
-  bool auto_prefix_mode;
 
   // Enforce that the iterator only iterates over the same prefix as the seek.
   // This option is effective only for prefix seeks, i.e. prefix_extractor is
@@ -1584,4 +1551,4 @@ struct SizeApproximationOptions {
   double files_size_error_margin = -1.0;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -13,7 +13,7 @@
 #include "file/writable_file_writer.h"
 #include "options/cf_options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class SstFileDumper {
  public:
@@ -82,6 +82,6 @@ class SstFileDumper {
   std::unique_ptr<TableProperties> table_properties_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

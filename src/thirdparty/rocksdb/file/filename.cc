@@ -19,7 +19,7 @@
 #include "util/stop_watch.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 static const std::string kRocksDbTFileExt = "sst";
 static const std::string kLevelDbTFileExt = "ldb";
@@ -370,7 +370,7 @@ bool ParseFileName(const std::string& fname, uint64_t* number,
 
 Status SetCurrentFile(Env* env, const std::string& dbname,
                       uint64_t descriptor_number,
-                      FSDirectory* directory_to_fsync) {
+                      Directory* directory_to_fsync) {
   // Remove leading "dbname/" and add newline to manifest file name
   std::string manifest = DescriptorFileName(dbname, descriptor_number);
   Slice contents = manifest;
@@ -385,7 +385,7 @@ Status SetCurrentFile(Env* env, const std::string& dbname,
   }
   if (s.ok()) {
     if (directory_to_fsync != nullptr) {
-      s = directory_to_fsync->Fsync(IOOptions(), nullptr);
+      s = directory_to_fsync->Fsync();
     }
   } else {
     env->DeleteFile(tmp);
@@ -453,4 +453,4 @@ Status GetInfoLogFiles(Env* env, const std::string& db_log_dir,
   return Status::OK();
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

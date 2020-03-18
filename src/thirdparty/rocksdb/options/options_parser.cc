@@ -24,7 +24,7 @@
 
 #include "port/port.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 static const std::string option_file_header =
     "# This is a RocksDB option file.\n"
@@ -37,16 +37,15 @@ static const std::string option_file_header =
 Status PersistRocksDBOptions(const DBOptions& db_opt,
                              const std::vector<std::string>& cf_names,
                              const std::vector<ColumnFamilyOptions>& cf_opts,
-                             const std::string& file_name, FileSystem* fs) {
+                             const std::string& file_name, Env* env) {
   TEST_SYNC_POINT("PersistRocksDBOptions:start");
   if (cf_names.size() != cf_opts.size()) {
     return Status::InvalidArgument(
         "cf_names.size() and cf_opts.size() must be the same");
   }
-  std::unique_ptr<FSWritableFile> wf;
+  std::unique_ptr<WritableFile> wf;
 
-  Status s =
-      fs->NewWritableFile(file_name, FileOptions(), &wf, nullptr);
+  Status s = env->NewWritableFile(file_name, &wf, EnvOptions());
   if (!s.ok()) {
     return s;
   }
@@ -104,7 +103,7 @@ Status PersistRocksDBOptions(const DBOptions& db_opt,
   writable->Close();
 
   return RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
-      db_opt, cf_names, cf_opts, file_name, fs);
+      db_opt, cf_names, cf_opts, file_name, env);
 }
 
 RocksDBOptionsParser::RocksDBOptionsParser() { Reset(); }
@@ -202,20 +201,15 @@ Status RocksDBOptionsParser::ParseStatement(std::string* name,
   return Status::OK();
 }
 
-Status RocksDBOptionsParser::Parse(const std::string& file_name, FileSystem* fs,
-                                   bool ignore_unknown_options,
-                                   size_t file_readahead_size) {
+Status RocksDBOptionsParser::Parse(const std::string& file_name, Env* env,
+                                   bool ignore_unknown_options) {
   Reset();
 
-  std::unique_ptr<FSSequentialFile> seq_file;
-  Status s = fs->NewSequentialFile(file_name, FileOptions(), &seq_file,
-                                   nullptr);
+  std::unique_ptr<SequentialFile> seq_file;
+  Status s = env->NewSequentialFile(file_name, &seq_file, EnvOptions());
   if (!s.ok()) {
     return s;
   }
-
-  SequentialFileReader sf_reader(std::move(seq_file), file_name,
-                                 file_readahead_size);
 
   OptionSection section = kOptionSectionUnknown;
   std::string title;
@@ -225,8 +219,8 @@ Status RocksDBOptionsParser::Parse(const std::string& file_name, FileSystem* fs,
   std::string line;
   bool has_data = true;
   // we only support single-lined statement.
-  for (int line_num = 1; ReadOneLine(&iss, &sf_reader, &line, &has_data, &s);
-       ++line_num) {
+  for (int line_num = 1;
+       ReadOneLine(&iss, seq_file.get(), &line, &has_data, &s); ++line_num) {
     if (!s.ok()) {
       return s;
     }
@@ -331,7 +325,7 @@ Status RocksDBOptionsParser::ParseVersionNumber(const std::string& ver_name,
   for (int i = 0; i < max_count; ++i) {
     version[i] = 0;
   }
-  constexpr int kBufferSize = 200;
+  const int kBufferSize = 200;
   char buffer[kBufferSize];
   for (size_t i = 0; i < ver_string.size(); ++i) {
     if (ver_string[i] == '.') {
@@ -658,19 +652,11 @@ bool AreEqualOptions(
 Status RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
     const DBOptions& db_opt, const std::vector<std::string>& cf_names,
     const std::vector<ColumnFamilyOptions>& cf_opts,
-    const std::string& file_name, FileSystem* fs,
+    const std::string& file_name, Env* env,
     OptionsSanityCheckLevel sanity_check_level, bool ignore_unknown_options) {
-  // We infer option file readhead size from log readahead size.
-  // If it is not given, use 512KB.
-  size_t file_readahead_size = db_opt.log_readahead_size;
-  if (file_readahead_size == 0) {
-    const size_t kDefaultOptionFileReadAheadSize = 512 * 1024;
-    file_readahead_size = kDefaultOptionFileReadAheadSize;
-  }
-
   RocksDBOptionsParser parser;
-  Status s =
-      parser.Parse(file_name, fs, ignore_unknown_options, file_readahead_size);
+  std::unique_ptr<SequentialFile> seq_file;
+  Status s = parser.Parse(file_name, env, ignore_unknown_options);
   if (!s.ok()) {
     return s;
   }
@@ -749,7 +735,7 @@ Status RocksDBOptionsParser::VerifyDBOptions(
       if (!AreEqualOptions(reinterpret_cast<const char*>(&base_opt),
                            reinterpret_cast<const char*>(&persisted_opt),
                            pair.second, pair.first, nullptr)) {
-        constexpr size_t kBufferSize = 2048;
+        const size_t kBufferSize = 2048;
         char buffer[kBufferSize];
         std::string base_value;
         std::string persisted_value;
@@ -787,7 +773,7 @@ Status RocksDBOptionsParser::VerifyCFOptions(
       if (!AreEqualOptions(reinterpret_cast<const char*>(&base_opt),
                            reinterpret_cast<const char*>(&persisted_opt),
                            pair.second, pair.first, persisted_opt_map)) {
-        constexpr size_t kBufferSize = 2048;
+        const size_t kBufferSize = 2048;
         char buffer[kBufferSize];
         std::string base_value;
         std::string persisted_value;
@@ -834,6 +820,6 @@ Status RocksDBOptionsParser::VerifyTableFactory(
   }
   return Status::OK();
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // !ROCKSDB_LITE

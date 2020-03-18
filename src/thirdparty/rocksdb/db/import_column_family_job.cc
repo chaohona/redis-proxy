@@ -16,7 +16,7 @@
 #include "table/table_builder.h"
 #include "util/stop_watch.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 Status ImportColumnFamilyJob::Prepare(uint64_t next_file_number,
                                       SuperVersion* sv) {
@@ -92,15 +92,14 @@ Status ImportColumnFamilyJob::Prepare(uint64_t next_file_number,
         cfd_->ioptions()->cf_paths, f.fd.GetNumber(), f.fd.GetPathId());
 
     if (hardlink_files) {
-      status =
-          fs_->LinkFile(path_outside_db, path_inside_db, IOOptions(), nullptr);
+      status = env_->LinkFile(path_outside_db, path_inside_db);
       if (status.IsNotSupported()) {
         // Original file is on a different FS, use copy instead of hard linking
         hardlink_files = false;
       }
     }
     if (!hardlink_files) {
-      status = CopyFile(fs_, path_outside_db, path_inside_db, 0,
+      status = CopyFile(env_, path_outside_db, path_inside_db, 0,
                         db_options_.use_fsync);
     }
     if (!status.ok()) {
@@ -116,8 +115,7 @@ Status ImportColumnFamilyJob::Prepare(uint64_t next_file_number,
       if (f.internal_file_path.empty()) {
         break;
       }
-      const auto s =
-          fs_->DeleteFile(f.internal_file_path, IOOptions(), nullptr);
+      const auto s = env_->DeleteFile(f.internal_file_path);
       if (!s.ok()) {
         ROCKS_LOG_WARN(db_options_.info_log,
                        "AddFile() clean up for file %s failed : %s",
@@ -153,8 +151,7 @@ Status ImportColumnFamilyJob::Run() {
                   f.fd.GetFileSize(), f.smallest_internal_key,
                   f.largest_internal_key, file_metadata.smallest_seqno,
                   file_metadata.largest_seqno, false, kInvalidBlobFileNumber,
-                  oldest_ancester_time, current_time, kUnknownFileChecksum,
-                  kUnknownFileChecksumFuncName);
+                  oldest_ancester_time, current_time);
 
     // If incoming sequence number is higher, update local sequence number.
     if (file_metadata.largest_seqno > versions_->LastSequence()) {
@@ -171,8 +168,7 @@ void ImportColumnFamilyJob::Cleanup(const Status& status) {
   if (!status.ok()) {
     // We failed to add files to the database remove all the files we copied.
     for (const auto& f : files_to_import_) {
-      const auto s =
-          fs_->DeleteFile(f.internal_file_path, IOOptions(), nullptr);
+      const auto s = env_->DeleteFile(f.internal_file_path);
       if (!s.ok()) {
         ROCKS_LOG_WARN(db_options_.info_log,
                        "AddFile() clean up for file %s failed : %s",
@@ -182,8 +178,7 @@ void ImportColumnFamilyJob::Cleanup(const Status& status) {
   } else if (status.ok() && import_options_.move_files) {
     // The files were moved and added successfully, remove original file links
     for (IngestedFileInfo& f : files_to_import_) {
-      const auto s =
-          fs_->DeleteFile(f.external_file_path, IOOptions(), nullptr);
+      const auto s = env_->DeleteFile(f.external_file_path);
       if (!s.ok()) {
         ROCKS_LOG_WARN(
             db_options_.info_log,
@@ -201,19 +196,17 @@ Status ImportColumnFamilyJob::GetIngestedFileInfo(
   file_to_import->external_file_path = external_file;
 
   // Get external file size
-  Status status = fs_->GetFileSize(external_file, IOOptions(),
-                                   &file_to_import->file_size, nullptr);
+  auto status = env_->GetFileSize(external_file, &file_to_import->file_size);
   if (!status.ok()) {
     return status;
   }
 
   // Create TableReader for external file
   std::unique_ptr<TableReader> table_reader;
-  std::unique_ptr<FSRandomAccessFile> sst_file;
+  std::unique_ptr<RandomAccessFile> sst_file;
   std::unique_ptr<RandomAccessFileReader> sst_file_reader;
 
-  status = fs_->NewRandomAccessFile(external_file, env_options_,
-                                    &sst_file, nullptr);
+  status = env_->NewRandomAccessFile(external_file, &sst_file, env_options_);
   if (!status.ok()) {
     return status;
   }
@@ -271,6 +264,6 @@ Status ImportColumnFamilyJob::GetIngestedFileInfo(
   return status;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // !ROCKSDB_LITE

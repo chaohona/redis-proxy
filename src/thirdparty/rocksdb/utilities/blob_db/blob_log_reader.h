@@ -17,7 +17,7 @@
 #include "rocksdb/status.h"
 #include "utilities/blob_db/blob_log_format.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class SequentialFileReader;
 class Logger;
@@ -78,5 +78,5 @@ class Reader {
 };
 
 }  // namespace blob_db
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LITE

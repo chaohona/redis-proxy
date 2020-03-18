@@ -12,10 +12,16 @@
 #include "rocksdb/perf_context.h"
 #include "table/block_based/filter_policy_internal.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 using BFP = BloomFilterPolicy;
+
+namespace BFP2 {
+// Extends BFP::Mode with option to use Plain table
+using PseudoMode = int;
+static constexpr PseudoMode kPlainTable = -1;
+}  // namespace BFP2
 }  // namespace
 
 // DB tests related to bloom filter.
@@ -88,7 +94,7 @@ TEST_P(DBBloomFilterTestDefFormatVersion, KeyMayExist) {
       // indexes
       continue;
     }
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     CreateAndReopenWithCF({"pikachu"}, options);
 
     ASSERT_TRUE(!db_->KeyMayExist(ropts, handles_[1], "a", &value));
@@ -150,7 +156,7 @@ TEST_F(DBBloomFilterTest, GetFilterByPrefixBloomCustomPrefixExtractor) {
     Options options = last_options_;
     options.prefix_extractor =
         std::make_shared<SliceTransformLimitedDomainGeneric>();
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     get_perf_context()->EnablePerLevelPerfContext();
     BlockBasedTableOptions bbto;
     bbto.filter_policy.reset(NewBloomFilterPolicy(10, false));
@@ -216,7 +222,7 @@ TEST_F(DBBloomFilterTest, GetFilterByPrefixBloom) {
   for (bool partition_filters : {true, false}) {
     Options options = last_options_;
     options.prefix_extractor.reset(NewFixedPrefixTransform(8));
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     get_perf_context()->EnablePerLevelPerfContext();
     BlockBasedTableOptions bbto;
     bbto.filter_policy.reset(NewBloomFilterPolicy(10, false));
@@ -267,7 +273,7 @@ TEST_F(DBBloomFilterTest, WholeKeyFilterProp) {
   for (bool partition_filters : {true, false}) {
     Options options = last_options_;
     options.prefix_extractor.reset(NewFixedPrefixTransform(3));
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     get_perf_context()->EnablePerLevelPerfContext();
 
     BlockBasedTableOptions bbto;
@@ -531,7 +537,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(DBBloomFilterTest, BloomFilterRate) {
   while (ChangeFilterOptions()) {
     Options options = CurrentOptions();
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     get_perf_context()->EnablePerLevelPerfContext();
     CreateAndReopenWithCF({"pikachu"}, options);
 
@@ -563,7 +569,7 @@ TEST_F(DBBloomFilterTest, BloomFilterRate) {
 
 TEST_F(DBBloomFilterTest, BloomFilterCompatibility) {
   Options options = CurrentOptions();
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   BlockBasedTableOptions table_options;
   table_options.filter_policy.reset(NewBloomFilterPolicy(10, true));
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
@@ -607,7 +613,7 @@ TEST_F(DBBloomFilterTest, BloomFilterCompatibility) {
 TEST_F(DBBloomFilterTest, BloomFilterReverseCompatibility) {
   for (bool partition_filters : {true, false}) {
     Options options = CurrentOptions();
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     BlockBasedTableOptions table_options;
     if (partition_filters) {
       table_options.partition_filters = true;
@@ -654,18 +660,17 @@ class TestingWrappedBlockBasedFilterPolicy : public FilterPolicy {
     return "TestingWrappedBlockBasedFilterPolicy";
   }
 
-  void CreateFilter(const ROCKSDB_NAMESPACE::Slice* keys, int n,
+  void CreateFilter(const rocksdb::Slice* keys, int n,
                     std::string* dst) const override {
-    std::unique_ptr<ROCKSDB_NAMESPACE::Slice[]> user_keys(
-        new ROCKSDB_NAMESPACE::Slice[n]);
+    std::unique_ptr<rocksdb::Slice[]> user_keys(new rocksdb::Slice[n]);
     for (int i = 0; i < n; ++i) {
       user_keys[i] = convertKey(keys[i]);
     }
     return filter_->CreateFilter(user_keys.get(), n, dst);
   }
 
-  bool KeyMayMatch(const ROCKSDB_NAMESPACE::Slice& key,
-                   const ROCKSDB_NAMESPACE::Slice& filter) const override {
+  bool KeyMayMatch(const rocksdb::Slice& key,
+                   const rocksdb::Slice& filter) const override {
     counter_++;
     return filter_->KeyMayMatch(convertKey(key), filter);
   }
@@ -676,16 +681,13 @@ class TestingWrappedBlockBasedFilterPolicy : public FilterPolicy {
   const FilterPolicy* filter_;
   mutable uint32_t counter_;
 
-  ROCKSDB_NAMESPACE::Slice convertKey(
-      const ROCKSDB_NAMESPACE::Slice& key) const {
-    return key;
-  }
+  rocksdb::Slice convertKey(const rocksdb::Slice& key) const { return key; }
 };
 }  // namespace
 
 TEST_F(DBBloomFilterTest, WrappedBlockBasedFilterPolicy) {
   Options options = CurrentOptions();
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
 
   BlockBasedTableOptions table_options;
   TestingWrappedBlockBasedFilterPolicy* policy =
@@ -801,7 +803,7 @@ class TestingContextCustomFilterPolicy
 TEST_F(DBBloomFilterTest, ContextCustomFilterPolicy) {
   for (bool fifo : {true, false}) {
     Options options = CurrentOptions();
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     options.compaction_style =
         fifo ? kCompactionStyleFIFO : kCompactionStyleLevel;
 
@@ -900,7 +902,7 @@ class SliceTransformLimitedDomain : public SliceTransform {
 TEST_F(DBBloomFilterTest, PrefixExtractorFullFilter) {
   BlockBasedTableOptions bbto;
   // Full Filter Block
-  bbto.filter_policy.reset(ROCKSDB_NAMESPACE::NewBloomFilterPolicy(10, false));
+  bbto.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
   bbto.whole_key_filtering = false;
 
   Options options = CurrentOptions();
@@ -929,7 +931,7 @@ TEST_F(DBBloomFilterTest, PrefixExtractorFullFilter) {
 TEST_F(DBBloomFilterTest, PrefixExtractorBlockFilter) {
   BlockBasedTableOptions bbto;
   // Block Filter Block
-  bbto.filter_policy.reset(ROCKSDB_NAMESPACE::NewBloomFilterPolicy(10, true));
+  bbto.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
 
   Options options = CurrentOptions();
   options.prefix_extractor = std::make_shared<SliceTransformLimitedDomain>();
@@ -968,8 +970,7 @@ TEST_F(DBBloomFilterTest, MemtableWholeKeyBloomFilter) {
   Options options = CurrentOptions();
   options.memtable_prefix_bloom_size_ratio =
       static_cast<double>(kMemtablePrefixFilterSize) / kMemtableSize;
-  options.prefix_extractor.reset(
-      ROCKSDB_NAMESPACE::NewFixedPrefixTransform(kPrefixLen));
+  options.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(kPrefixLen));
   options.write_buffer_size = kMemtableSize;
   options.memtable_whole_key_filtering = false;
   Reopen(options);
@@ -1030,14 +1031,6 @@ TEST_F(DBBloomFilterTest, MemtablePrefixBloomOutOfDomain) {
 }
 
 #ifndef ROCKSDB_LITE
-namespace {
-namespace BFP2 {
-// Extends BFP::Mode with option to use Plain table
-using PseudoMode = int;
-static constexpr PseudoMode kPlainTable = -1;
-}  // namespace BFP2
-}  // namespace
-
 class BloomStatsTestWithParam
     : public DBBloomFilterTest,
       public testing::WithParamInterface<std::tuple<BFP2::PseudoMode, bool>> {
@@ -1047,8 +1040,7 @@ class BloomStatsTestWithParam
     partition_filters_ = std::get<1>(GetParam());
 
     options_.create_if_missing = true;
-    options_.prefix_extractor.reset(
-        ROCKSDB_NAMESPACE::NewFixedPrefixTransform(4));
+    options_.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(4));
     options_.memtable_prefix_bloom_size_ratio =
         8.0 * 1024.0 / static_cast<double>(options_.write_buffer_size);
     if (bfp_impl_ == BFP2::kPlainTable) {
@@ -1329,7 +1321,7 @@ TEST_F(DBBloomFilterTest, OptimizeFiltersForHits) {
   bbto.whole_key_filtering = true;
   options.table_factory.reset(NewBlockBasedTableFactory(bbto));
   options.optimize_filters_for_hits = true;
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   get_perf_context()->Reset();
   get_perf_context()->EnablePerLevelPerfContext();
   CreateAndReopenWithCF({"mypikachu"}, options);
@@ -1455,13 +1447,13 @@ TEST_F(DBBloomFilterTest, OptimizeFiltersForHits) {
 
   int32_t trivial_move = 0;
   int32_t non_trivial_move = 0;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::BackgroundCompaction:TrivialMove",
       [&](void* /*arg*/) { trivial_move++; });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "DBImpl::BackgroundCompaction:NonTrivial",
       [&](void* /*arg*/) { non_trivial_move++; });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   CompactRangeOptions compact_options;
   compact_options.bottommost_level_compaction =
@@ -1901,10 +1893,10 @@ TEST_F(DBBloomFilterTest, DynamicBloomFilterOptions) {
 
 #endif  // ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

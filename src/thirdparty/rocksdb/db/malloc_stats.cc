@@ -15,7 +15,8 @@
 
 #include "port/jemalloc_helper.h"
 
-namespace ROCKSDB_NAMESPACE {
+
+namespace rocksdb {
 
 #ifdef ROCKSDB_JEMALLOC
 
@@ -50,5 +51,5 @@ void DumpMallocStats(std::string* stats) {
 #else
 void DumpMallocStats(std::string*) {}
 #endif  // ROCKSDB_JEMALLOC
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

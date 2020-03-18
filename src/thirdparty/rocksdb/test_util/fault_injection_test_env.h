@@ -25,7 +25,7 @@
 #include "util/mutexlock.h"
 #include "util/random.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class TestWritableFile;
 class FaultInjectionTestEnv;
@@ -222,4 +222,4 @@ class FaultInjectionTestEnv : public EnvWrapper {
   Status error_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

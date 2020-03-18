@@ -4,7 +4,7 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the "bridge" between Java and C++
-// for ROCKSDB_NAMESPACE::TransactionNotifier.
+// for rocksdb::TransactionNotifier.
 
 #include <jni.h>
 
@@ -19,9 +19,9 @@
 jlong Java_org_rocksdb_AbstractTransactionNotifier_createNewTransactionNotifier(
     JNIEnv* env, jobject jobj) {
   auto* transaction_notifier =
-      new ROCKSDB_NAMESPACE::TransactionNotifierJniCallback(env, jobj);
+      new rocksdb::TransactionNotifierJniCallback(env, jobj);
   auto* sptr_transaction_notifier =
-      new std::shared_ptr<ROCKSDB_NAMESPACE::TransactionNotifierJniCallback>(
+      new std::shared_ptr<rocksdb::TransactionNotifierJniCallback>(
           transaction_notifier);
   return reinterpret_cast<jlong>(sptr_transaction_notifier);
 }
@@ -35,9 +35,8 @@ void Java_org_rocksdb_AbstractTransactionNotifier_disposeInternal(
     JNIEnv* /*env*/, jobject /*jobj*/, jlong jhandle) {
   // TODO(AR) refactor to use JniCallback::JniCallback
   // when https://github.com/facebook/rocksdb/pull/1241/ is merged
-  std::shared_ptr<ROCKSDB_NAMESPACE::TransactionNotifierJniCallback>* handle =
+  std::shared_ptr<rocksdb::TransactionNotifierJniCallback>* handle =
       reinterpret_cast<
-          std::shared_ptr<ROCKSDB_NAMESPACE::TransactionNotifierJniCallback>*>(
-          jhandle);
+          std::shared_ptr<rocksdb::TransactionNotifierJniCallback>*>(jhandle);
   delete handle;
 }

@@ -12,7 +12,7 @@
 #include "rocksdb/utilities/db_ttl.h"
 #include "rocksdb/utilities/stackable_db.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Please don't use this class. It's deprecated
 class UtilityDB {
@@ -30,5 +30,5 @@ class UtilityDB {
             StackableDB** dbptr, int32_t ttl = 0, bool read_only = false);
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  //  namespace rocksdb
 #endif  // ROCKSDB_LITE

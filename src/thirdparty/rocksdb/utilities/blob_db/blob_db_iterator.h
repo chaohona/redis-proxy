@@ -12,10 +12,10 @@
 #include "util/stop_watch.h"
 #include "utilities/blob_db/blob_db_impl.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace blob_db {
 
-using ROCKSDB_NAMESPACE::ManagedSnapshot;
+using rocksdb::ManagedSnapshot;
 
 class BlobDBIterator : public Iterator {
  public:
@@ -117,6 +117,8 @@ class BlobDBIterator : public Iterator {
  private:
   // Return true if caller should continue to next value.
   bool UpdateBlobValue() {
+    TEST_SYNC_POINT("BlobDBIterator::UpdateBlobValue:Start:1");
+    TEST_SYNC_POINT("BlobDBIterator::UpdateBlobValue:Start:2");
     value_.Reset();
     status_ = Status::OK();
     if (iter_->Valid() && iter_->status().ok() && iter_->IsBlob()) {
@@ -143,5 +145,5 @@ class BlobDBIterator : public Iterator {
   PinnableSlice value_;
 };
 }  // namespace blob_db
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

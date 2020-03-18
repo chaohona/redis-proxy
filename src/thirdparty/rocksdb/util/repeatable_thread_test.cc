@@ -14,24 +14,23 @@
 class RepeatableThreadTest : public testing::Test {
  public:
   RepeatableThreadTest()
-      : mock_env_(new ROCKSDB_NAMESPACE::MockTimeEnv(
-            ROCKSDB_NAMESPACE::Env::Default())) {}
+      : mock_env_(new rocksdb::MockTimeEnv(rocksdb::Env::Default())) {}
 
  protected:
-  std::unique_ptr<ROCKSDB_NAMESPACE::MockTimeEnv> mock_env_;
+  std::unique_ptr<rocksdb::MockTimeEnv> mock_env_;
 };
 
 TEST_F(RepeatableThreadTest, TimedTest) {
   constexpr uint64_t kSecond = 1000000;  // 1s = 1000000us
   constexpr int kIteration = 3;
-  ROCKSDB_NAMESPACE::Env* env = ROCKSDB_NAMESPACE::Env::Default();
-  ROCKSDB_NAMESPACE::port::Mutex mutex;
-  ROCKSDB_NAMESPACE::port::CondVar test_cv(&mutex);
+  rocksdb::Env* env = rocksdb::Env::Default();
+  rocksdb::port::Mutex mutex;
+  rocksdb::port::CondVar test_cv(&mutex);
   int count = 0;
   uint64_t prev_time = env->NowMicros();
-  ROCKSDB_NAMESPACE::RepeatableThread thread(
+  rocksdb::RepeatableThread thread(
       [&] {
-        ROCKSDB_NAMESPACE::MutexLock l(&mutex);
+        rocksdb::MutexLock l(&mutex);
         count++;
         uint64_t now = env->NowMicros();
         assert(count == 1 || prev_time + 1 * kSecond <= now);
@@ -43,7 +42,7 @@ TEST_F(RepeatableThreadTest, TimedTest) {
       "rt_test", env, 1 * kSecond);
   // Wait for execution finish.
   {
-    ROCKSDB_NAMESPACE::MutexLock l(&mutex);
+    rocksdb::MutexLock l(&mutex);
     while (count < kIteration) {
       test_cv.Wait();
     }
@@ -60,9 +59,9 @@ TEST_F(RepeatableThreadTest, MockEnvTest) {
   std::atomic<int> count{0};
 
 #if defined(OS_MACOSX) && !defined(NDEBUG)
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "InstrumentedCondVar::TimedWaitInternal", [&](void* arg) {
         // Obtain the current (real) time in seconds and add 1000 extra seconds
         // to ensure that RepeatableThread::wait invokes TimedWait with a time
@@ -84,11 +83,11 @@ TEST_F(RepeatableThreadTest, MockEnvTest) {
           *reinterpret_cast<uint64_t*>(arg) = mock_env_->RealNowMicros() + 1000;
         }
       });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 #endif  // OS_MACOSX && !NDEBUG
 
-  ROCKSDB_NAMESPACE::RepeatableThread thread(
-      [&] { count++; }, "rt_test", mock_env_.get(), 1 * kSecond, 1 * kSecond);
+  rocksdb::RepeatableThread thread([&] { count++; }, "rt_test", mock_env_.get(),
+                                   1 * kSecond, 1 * kSecond);
   for (int i = 1; i <= kIteration; i++) {
     // Bump current time
     thread.TEST_WaitForRun([&] { mock_env_->set_current_time(i); });

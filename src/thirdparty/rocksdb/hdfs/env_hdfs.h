@@ -16,7 +16,7 @@
 #ifdef USE_HDFS
 #include <hdfs.h>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Thrown during execution when there is an issue with the supplied
 // arguments.
@@ -230,11 +230,12 @@ class HdfsEnv : public Env {
   }
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #else // USE_HDFS
 
-namespace ROCKSDB_NAMESPACE {
+
+namespace rocksdb {
 
 static const Status notsup;
 
@@ -379,6 +380,6 @@ class HdfsEnv : public Env {
     return 0;
   }
 };
-}  // namespace ROCKSDB_NAMESPACE
+}
 
 #endif // USE_HDFS

@@ -20,7 +20,7 @@
 #include "test_util/sync_point.h"
 #include "util/coding.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 MetaIndexBuilder::MetaIndexBuilder()
     : meta_index_block_(new BlockBuilder(1 /* restart interval */)) {}
@@ -226,10 +226,11 @@ Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
     return s;
   }
 
-  Block properties_block(std::move(block_contents));
+  Block properties_block(std::move(block_contents),
+                         kDisableGlobalSequenceNumber);
   DataBlockIter iter;
   properties_block.NewDataIterator(BytewiseComparator(), BytewiseComparator(),
-                                   kDisableGlobalSequenceNumber, &iter);
+                                   &iter);
 
   auto new_table_properties = new TableProperties();
   // All pre-defined properties of type uint64_t
@@ -340,8 +341,7 @@ Status ReadProperties(const Slice& handle_value, RandomAccessFileReader* file,
     }
     if (verification_buf != nullptr) {
       size_t len = static_cast<size_t>(handle.size() + kBlockTrailerSize);
-      *verification_buf =
-          ROCKSDB_NAMESPACE::AllocateBlock(len, memory_allocator);
+      *verification_buf = rocksdb::AllocateBlock(len, memory_allocator);
       if (verification_buf->get() != nullptr) {
         memcpy(verification_buf->get(), block_contents.data.data(), len);
       }
@@ -384,10 +384,10 @@ Status ReadTableProperties(RandomAccessFileReader* file, uint64_t file_size,
   }
   // property blocks are never compressed. Need to add uncompress logic if we
   // are to compress it.
-  Block metaindex_block(std::move(metaindex_contents));
+  Block metaindex_block(std::move(metaindex_contents),
+                        kDisableGlobalSequenceNumber);
   std::unique_ptr<InternalIterator> meta_iter(metaindex_block.NewDataIterator(
-      BytewiseComparator(), BytewiseComparator(),
-      kDisableGlobalSequenceNumber));
+      BytewiseComparator(), BytewiseComparator()));
 
   // -- Read property block
   bool found_properties_block = true;
@@ -454,12 +454,12 @@ Status FindMetaBlock(RandomAccessFileReader* file, uint64_t file_size,
   }
   // meta blocks are never compressed. Need to add uncompress logic if we are to
   // compress it.
-  Block metaindex_block(std::move(metaindex_contents));
+  Block metaindex_block(std::move(metaindex_contents),
+                        kDisableGlobalSequenceNumber);
 
   std::unique_ptr<InternalIterator> meta_iter;
-  meta_iter.reset(metaindex_block.NewDataIterator(
-      BytewiseComparator(), BytewiseComparator(),
-      kDisableGlobalSequenceNumber));
+  meta_iter.reset(metaindex_block.NewDataIterator(BytewiseComparator(),
+                                                  BytewiseComparator()));
 
   return FindMetaBlock(meta_iter.get(), meta_block_name, block_handle);
 }
@@ -499,12 +499,12 @@ Status ReadMetaBlock(RandomAccessFileReader* file,
   // compress it.
 
   // Finding metablock
-  Block metaindex_block(std::move(metaindex_contents));
+  Block metaindex_block(std::move(metaindex_contents),
+                        kDisableGlobalSequenceNumber);
 
   std::unique_ptr<InternalIterator> meta_iter;
-  meta_iter.reset(metaindex_block.NewDataIterator(
-      BytewiseComparator(), BytewiseComparator(),
-      kDisableGlobalSequenceNumber));
+  meta_iter.reset(metaindex_block.NewDataIterator(BytewiseComparator(),
+                                                  BytewiseComparator()));
 
   BlockHandle block_handle;
   status = FindMetaBlock(meta_iter.get(), meta_block_name, &block_handle);
@@ -521,4 +521,4 @@ Status ReadMetaBlock(RandomAccessFileReader* file,
   return block_fetcher2.ReadBlockContents();
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

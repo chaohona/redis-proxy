@@ -33,7 +33,7 @@
 #include "trace_replay/block_cache_tracer.h"
 #include "util/hash.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 const uint64_t kNotValid = ULLONG_MAX;
 class FilterPolicy;
@@ -160,11 +160,9 @@ class FilterBlockReader {
                              const SliceTransform* prefix_extractor,
                              const Comparator* /*comparator*/,
                              const Slice* const const_ikey_ptr,
-                             bool* filter_checked, bool need_upper_bound_check,
+                             bool* filter_checked,
+                             bool /*need_upper_bound_check*/,
                              BlockCacheLookupContext* lookup_context) {
-    if (need_upper_bound_check) {
-      return true;
-    }
     *filter_checked = true;
     Slice prefix = prefix_extractor->Transform(user_key);
     return PrefixMayMatch(prefix, prefix_extractor, kNotValid, false,
@@ -173,4 +171,4 @@ class FilterBlockReader {
   }
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

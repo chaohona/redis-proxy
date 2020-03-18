@@ -9,7 +9,7 @@
 #include <memory>
 #include "rocksdb/utilities/table_properties_collectors.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 CompactOnDeletionCollector::CompactOnDeletionCollector(
     size_t sliding_window_size, size_t deletion_trigger)
@@ -86,5 +86,5 @@ std::shared_ptr<CompactOnDeletionCollectorFactory>
       new CompactOnDeletionCollectorFactory(
           sliding_window_size, deletion_trigger));
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

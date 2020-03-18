@@ -11,7 +11,7 @@
 #include <atomic>
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // This file provides the following main abstractions:
 // SequentialFileReader : wrapper over Env::SequentialFile
 // RandomAccessFileReader : wrapper over Env::RandomAccessFile
@@ -24,4 +24,4 @@ namespace ROCKSDB_NAMESPACE {
 // Compaction Table Readers.
 std::unique_ptr<RandomAccessFile> NewReadaheadRandomAccessFile(
     std::unique_ptr<RandomAccessFile>&& file, size_t readahead_size);
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -8,9 +8,7 @@
 #include <map>
 #include <string>
 
-#include "rocksdb/rocksdb_namespace.h"
-
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class WriteBatch;
 
@@ -99,4 +97,4 @@ class WalFilter {
   virtual const char* Name() const = 0;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

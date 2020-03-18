@@ -8,7 +8,7 @@
 #ifndef ROCKSDB_LITE
 #include "rocksdb/db.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace {
 // Return a version of Options `opts` that allow us to open/write into a DB
 // without triggering an automatic compaction or stalling. This is guaranteed
@@ -156,13 +156,13 @@ Status OptionChangeMigration(std::string dbname, const Options& old_opts,
         "Do not how to migrate to this compaction style");
   }
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #else
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 Status OptionChangeMigration(std::string /*dbname*/,
                              const Options& /*old_opts*/,
                              const Options& /*new_opts*/) {
   return Status::NotSupported();
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LITE

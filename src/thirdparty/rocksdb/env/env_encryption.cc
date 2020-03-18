@@ -17,7 +17,7 @@
 
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifndef ROCKSDB_LITE
 
@@ -934,4 +934,4 @@ Status CTREncryptionProvider::CreateCipherStreamFromPrefix(
 
 #endif // ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -10,7 +10,7 @@
 #include "rocksdb/env.h"
 #include "test_util/testharness.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class WriteControllerTest : public testing::Test {};
 
@@ -127,7 +127,7 @@ TEST_F(WriteControllerTest, SanityTest) {
   ASSERT_FALSE(controller.IsStopped());
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

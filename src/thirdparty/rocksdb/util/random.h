@@ -8,12 +8,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include <stdint.h>
 #include <random>
+#include <stdint.h>
 
-#include "rocksdb/rocksdb_namespace.h"
-
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // A very simple random number generator.  Not especially good at
 // generating truly random bits, but good enough for our needs in this
@@ -65,18 +63,7 @@ class Random {
 
   // Randomly returns true ~"1/n" of the time, and false otherwise.
   // REQUIRES: n > 0
-  bool OneIn(int n) { return Uniform(n) == 0; }
-
-  // "Optional" one-in-n, where 0 or negative always returns false
-  // (may or may not consume a random value)
-  bool OneInOpt(int n) { return n > 0 && OneIn(n); }
-
-  // Returns random bool that is true for the given percentage of
-  // calls on average. Zero or less is always false and 100 or more
-  // is always true (may or may not consume a random value)
-  bool PercentTrue(int percentage) {
-    return static_cast<int>(Uniform(100)) < percentage;
-  }
+  bool OneIn(int n) { return (Next() % n) == 0; }
 
   // Skewed: pick "base" uniformly from range [0,max_log] and then
   // return "base" random bits.  The effect is to pick a number in the
@@ -163,4 +150,4 @@ class Random64 {
   }
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

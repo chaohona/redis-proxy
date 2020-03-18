@@ -38,6 +38,17 @@ public:
     vector<string>          m_vFilters;
 };
 
+struct GR_StoreInfo
+{
+    string  strDBPath;
+};
+
+struct GR_AOFInfo
+{
+    long lUnixTime = 0;
+    bool bCheckHead = false;
+};
+
 class GR_Config
 {
 public:
@@ -54,6 +65,9 @@ private:
     int ParseLBPolicy(YAML::Node &node);
     int ParseReplicate(YAML::Node &node);
     int ValidCheck();
+
+    int ParseStore(YAML::Node &node);
+    int ParseAof(YAML::Node &node);
 
 private:
     char* m_szCfgPath;
@@ -98,6 +112,9 @@ public:
     GR_ReplicateInfo    m_ReplicateInfo;
 
     bool                m_bSupportClusterSlots = false;
+
+    GR_StoreInfo        m_storeInfo;
+    GR_AOFInfo          m_aofInfo;
 };
 
 #endif

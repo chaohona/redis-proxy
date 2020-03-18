@@ -26,7 +26,7 @@
 #include "rocksdb/transaction_log.h"
 #include "rocksdb/types.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifndef ROCKSDB_LITE
 
@@ -36,11 +36,10 @@ namespace ROCKSDB_NAMESPACE {
 class WalManager {
  public:
   WalManager(const ImmutableDBOptions& db_options,
-             const FileOptions& file_options, const bool seq_per_batch = false)
+             const EnvOptions& env_options, const bool seq_per_batch = false)
       : db_options_(db_options),
-        file_options_(file_options),
+        env_options_(env_options),
         env_(db_options.env),
-        fs_(db_options.fs.get()),
         purge_wal_files_last_run_(0),
         seq_per_batch_(seq_per_batch),
         wal_in_db_path_(IsWalDirSameAsDBPath(&db_options)) {}
@@ -89,9 +88,8 @@ class WalManager {
 
   // ------- state from DBImpl ------
   const ImmutableDBOptions& db_options_;
-  const FileOptions file_options_;
+  const EnvOptions& env_options_;
   Env* env_;
-  FileSystem* fs_;
 
   // ------- WalManager state -------
   // cache for ReadFirstRecord() calls
@@ -111,4 +109,4 @@ class WalManager {
 };
 
 #endif  // ROCKSDB_LITE
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

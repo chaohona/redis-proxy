@@ -15,7 +15,7 @@
 #include "rocksdb/table.h"
 #include "table/block_based/data_block_hash_index.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class BlockBuilder {
  public:
@@ -72,4 +72,4 @@ class BlockBuilder {
   DataBlockHashIndexBuilder data_block_hash_index_builder_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -1,5 +1,6 @@
 #include "twemroute.h"
 #include "include.h"
+#include "proxy.h"
 
 #include <algorithm>
 #include <string>
@@ -15,28 +16,27 @@ GR_TwemRoute::~GR_TwemRoute()
 {
 }
 
-int GR_TwemRoute::Init(GR_Config *pConfig)
+int GR_TwemRoute::Init(string &strGroup, YAML::Node& node)
 {
-    ASSERT(pConfig!=nullptr);
-    const char *szCfgPath = pConfig->m_strTwemCfg.c_str();
     try
     {
-        this->m_vServers = new GR_RedisServer*[MAX_REDIS_GROUP];
-
-        YAML::Node node = YAML::LoadFile(szCfgPath);
-
-        auto server = node.begin();
-        if (server == node.end())
+        if (GR_OK != GR_Route::Init(strGroup, node))
         {
-            GR_LOGE("the file is empty:%s", szCfgPath);
+            GR_LOGE("init route group failed:%s", strGroup.c_str());
             return GR_ERROR;
         }
-        GR_LOGI("begin to parse redis twemproxy cluster:%s", server->first.as<std::string>().c_str());
-        return this->ConfigParse(server->second);
+        this->m_vServers = new GR_RedisServer*[MAX_REDIS_GROUP];
+        GR_LOGI("begin to parse redis twemproxy cluster:%s", strGroup.c_str());
+        if (GR_OK != this->ConfigParse(node))
+        {
+            GR_STDERR("parse twem config failed.");
+            return GR_ERROR;
+        }
+        return this->ConnectToRedis();
     }
     catch(exception &e)
     {
-        cout << "parse config file:" << szCfgPath <<", got exception:" << e.what() << endl;
+        cout << "parse config file:" << strGroup <<", got exception:" << e.what() << endl;
         return GR_ERROR;
     }
     return GR_OK;
@@ -209,6 +209,39 @@ int GR_TwemRoute::ConfigParse(YAML::Node& node)
     return GR_OK;
 }
 
+int GR_TwemRoute::ConnectToRedis()
+{
+    int iRet = GR_OK;
+    GR_RedisServer *pServer;
+    for (int i=0; i<this->m_iSrvNum; i++)
+    {
+        pServer = this->m_vServers[i];
+        iRet = pServer->Connect(this);
+        if (iRet != GR_OK)
+        {
+            GR_LOGE("connect to redis failed:%s", pServer->strInfo.c_str());
+            return GR_ERROR;
+        }
+    }
+
+    // 建立连接
+    // 启动监听端口
+    GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+    GR_AccessMgr *pMgr = this->m_pAccessMgr;
+    if (pConfig->m_iBAType != GR_PROXY_BA_IP)
+    {
+        iRet = pMgr->Listen(this->m_strListenIP.c_str(), this->m_usListenPort, 
+            pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
+    }
+    if (iRet != GR_OK)
+    {
+        GR_LOGE("twem, redis group listen failed:%s", this->m_strGroup.c_str());
+        return iRet;
+    }
+    return GR_OK;
+}
+
+
 int GR_TwemRoute::ParseListen()
 {
     auto results = split(this->m_strListen, ":");
@@ -218,6 +251,8 @@ int GR_TwemRoute::ParseListen()
     }
     this->m_Listen.strName = results[0];
     this->m_Listen.iPort = stoi(results[1], 0, 10);
+    this->m_strListenIP = results[0];
+    this->m_usListenPort = this->m_Listen.iPort;
     return GR_OK;
 }
 
@@ -426,4 +461,39 @@ GR_RedisEvent* GR_TwemRoute::Route(GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData
     return this->m_FuncDispatch(this->m_vServers, this->m_vContinuum, this->ncontinuum, uiKey);
 }
 
+GR_TwemRouteGroup::GR_TwemRouteGroup()
+{
+}
+
+GR_TwemRouteGroup::~GR_TwemRouteGroup()
+{
+}
+
+int GR_TwemRouteGroup::Init(GR_Config *pConfig)
+{
+    try
+    {
+        this->m_vRoute = new GR_TwemRoute[GR_MAX_GROUPS];
+        YAML::Node node = YAML::LoadFile(pConfig->m_strTwemCfg.c_str());
+        string strGroup;
+        int index = 0;
+        GR_TwemRoute *pRoute = dynamic_cast<GR_TwemRoute*>(this->m_vRoute);
+        for(auto c=node.begin(); c!=node.end(); c++, ++pRoute)
+        {
+            strGroup = c->first.as<string>();
+            pRoute = dynamic_cast<GR_TwemRoute*>(pRoute);
+            if (GR_OK != pRoute->Init(strGroup, c->second))
+            {
+                GR_LOGE("init redis route failed:%s", strGroup.c_str());
+                return GR_ERROR;
+            }
+        }
+    }
+    catch(exception &e)
+    {
+        GR_LOGE("init route group got exception:%s", e.what());
+        return GR_ERROR;
+    }
+    return GR_OK;
+}
 

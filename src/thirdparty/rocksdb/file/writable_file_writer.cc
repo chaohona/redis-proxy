@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <mutex>
 
-#include "db/version_edit.h"
 #include "monitoring/histogram.h"
 #include "monitoring/iostats_context_imp.h"
 #include "port/port.h"
@@ -20,7 +19,7 @@
 #include "util/random.h"
 #include "util/rate_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 Status WritableFileWriter::Append(const Slice& data) {
   const char* src = data.data();
   size_t left = data.size();
@@ -33,8 +32,7 @@ Status WritableFileWriter::Append(const Slice& data) {
   {
     IOSTATS_TIMER_GUARD(prepare_write_nanos);
     TEST_SYNC_POINT("WritableFileWriter::Append:BeforePrepareWrite");
-    writable_file_->PrepareWrite(static_cast<size_t>(GetFileSize()), left,
-                                 IOOptions(), nullptr);
+    writable_file_->PrepareWrite(static_cast<size_t>(GetFileSize()), left);
   }
 
   // See whether we need to enlarge the buffer to avoid the flush
@@ -89,7 +87,6 @@ Status WritableFileWriter::Append(const Slice& data) {
   TEST_KILL_RANDOM("WritableFileWriter::Append:1", rocksdb_kill_odds);
   if (s.ok()) {
     filesize_ += data.size();
-    CalculateFileChecksum(data);
   }
   return s;
 }
@@ -137,9 +134,9 @@ Status WritableFileWriter::Close() {
   // In direct I/O mode we write whole pages so
   // we need to let the file know where data ends.
   if (use_direct_io()) {
-    interim = writable_file_->Truncate(filesize_, IOOptions(), nullptr);
+    interim = writable_file_->Truncate(filesize_);
     if (interim.ok()) {
-      interim = writable_file_->Fsync(IOOptions(), nullptr);
+      interim = writable_file_->Fsync();
     }
     if (!interim.ok() && s.ok()) {
       s = interim;
@@ -147,7 +144,7 @@ Status WritableFileWriter::Close() {
   }
 
   TEST_KILL_RANDOM("WritableFileWriter::Close:0", rocksdb_kill_odds);
-  interim = writable_file_->Close(IOOptions(), nullptr);
+  interim = writable_file_->Close();
   if (!interim.ok() && s.ok()) {
     s = interim;
   }
@@ -180,7 +177,7 @@ Status WritableFileWriter::Flush() {
     }
   }
 
-  s = writable_file_->Flush(IOOptions(), nullptr);
+  s = writable_file_->Flush();
 
   if (!s.ok()) {
     return s;
@@ -214,14 +211,6 @@ Status WritableFileWriter::Flush() {
   }
 
   return s;
-}
-
-const char* WritableFileWriter::GetFileChecksumFuncName() const {
-  if (checksum_func_ != nullptr) {
-    return checksum_func_->Name();
-  } else {
-    return kUnknownFileChecksumFuncName.c_str();
-  }
 }
 
 Status WritableFileWriter::Sync(bool use_fsync) {
@@ -260,9 +249,9 @@ Status WritableFileWriter::SyncInternal(bool use_fsync) {
   auto prev_perf_level = GetPerfLevel();
   IOSTATS_CPU_TIMER_GUARD(cpu_write_nanos, env_);
   if (use_fsync) {
-    s = writable_file_->Fsync(IOOptions(), nullptr);
+    s = writable_file_->Fsync();
   } else {
-    s = writable_file_->Sync(IOOptions(), nullptr);
+    s = writable_file_->Sync();
   }
   SetPerfLevel(prev_perf_level);
   return s;
@@ -271,7 +260,7 @@ Status WritableFileWriter::SyncInternal(bool use_fsync) {
 Status WritableFileWriter::RangeSync(uint64_t offset, uint64_t nbytes) {
   IOSTATS_TIMER_GUARD(range_sync_nanos);
   TEST_SYNC_POINT("WritableFileWriter::RangeSync:0");
-  return writable_file_->RangeSync(offset, nbytes, IOOptions(), nullptr);
+  return writable_file_->RangeSync(offset, nbytes);
 }
 
 // This method writes to disk the specified data and makes use of the rate
@@ -298,7 +287,7 @@ Status WritableFileWriter::WriteBuffered(const char* data, size_t size) {
 
 #ifndef ROCKSDB_LITE
       FileOperationInfo::TimePoint start_ts;
-      uint64_t old_size = writable_file_->GetFileSize(IOOptions(), nullptr);
+      uint64_t old_size = writable_file_->GetFileSize();
       if (ShouldNotifyListeners()) {
         start_ts = std::chrono::system_clock::now();
         old_size = next_write_offset_;
@@ -307,7 +296,7 @@ Status WritableFileWriter::WriteBuffered(const char* data, size_t size) {
       {
         auto prev_perf_level = GetPerfLevel();
         IOSTATS_CPU_TIMER_GUARD(cpu_write_nanos, env_);
-        s = writable_file_->Append(Slice(src, allowed), IOOptions(), nullptr);
+        s = writable_file_->Append(Slice(src, allowed));
         SetPerfLevel(prev_perf_level);
       }
 #ifndef ROCKSDB_LITE
@@ -329,18 +318,6 @@ Status WritableFileWriter::WriteBuffered(const char* data, size_t size) {
   }
   buf_.Size(0);
   return s;
-}
-
-void WritableFileWriter::CalculateFileChecksum(const Slice& data) {
-  if (checksum_func_ != nullptr) {
-    if (is_first_checksum_) {
-      file_checksum_ = checksum_func_->Value(data.data(), data.size());
-      is_first_checksum_ = false;
-    } else {
-      file_checksum_ =
-          checksum_func_->Extend(file_checksum_, data.data(), data.size());
-    }
-  }
 }
 
 // This flushes the accumulated data in the buffer. We pad data with zeros if
@@ -393,8 +370,7 @@ Status WritableFileWriter::WriteDirect() {
         start_ts = std::chrono::system_clock::now();
       }
       // direct writes must be positional
-      s = writable_file_->PositionedAppend(Slice(src, size), write_offset,
-                                           IOOptions(), nullptr);
+      s = writable_file_->PositionedAppend(Slice(src, size), write_offset);
       if (ShouldNotifyListeners()) {
         auto finish_ts = std::chrono::system_clock::now();
         NotifyOnFileWriteFinish(write_offset, size, start_ts, finish_ts, s);
@@ -426,4 +402,4 @@ Status WritableFileWriter::WriteDirect() {
   return s;
 }
 #endif  // !ROCKSDB_LITE
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

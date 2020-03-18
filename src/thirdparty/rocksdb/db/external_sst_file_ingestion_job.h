@@ -19,7 +19,7 @@
 #include "rocksdb/sst_file_writer.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Directories;
 
@@ -74,7 +74,6 @@ class ExternalSstFileIngestionJob {
       const IngestExternalFileOptions& ingestion_options,
       Directories* directories, EventLogger* event_logger)
       : env_(env),
-        fs_(db_options.fs.get()),
         versions_(versions),
         cfd_(cfd),
         db_options_(db_options),
@@ -159,7 +158,6 @@ class ExternalSstFileIngestionJob {
   Status SyncIngestedFile(TWritableFile* file);
 
   Env* env_;
-  FileSystem* fs_;
   VersionSet* versions_;
   ColumnFamilyData* cfd_;
   const ImmutableDBOptions& db_options_;
@@ -177,4 +175,4 @@ class ExternalSstFileIngestionJob {
   bool files_overlap_{false};
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

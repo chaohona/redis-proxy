@@ -12,7 +12,7 @@
 #include "monitoring/histogram.h"
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class HistogramWindowingImpl : public Histogram
 {
@@ -77,4 +77,4 @@ private:
   uint64_t min_num_per_window_ = 0;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

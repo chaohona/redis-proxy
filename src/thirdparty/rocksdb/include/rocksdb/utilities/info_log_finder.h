@@ -11,9 +11,9 @@
 #include "rocksdb/db.h"
 #include "rocksdb/options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // This function can be used to list the Information logs,
 // given the db pointer.
 Status GetInfoLogList(DB* db, std::vector<std::string>* info_log_list);
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

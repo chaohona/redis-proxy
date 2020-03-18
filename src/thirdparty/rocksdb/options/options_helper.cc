@@ -26,7 +26,7 @@
 #include "util/cast_util.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 DBOptions BuildDBOptions(const ImmutableDBOptions& immutable_db_options,
                          const MutableDBOptions& mutable_db_options) {
@@ -38,7 +38,6 @@ DBOptions BuildDBOptions(const ImmutableDBOptions& immutable_db_options,
   options.error_if_exists = immutable_db_options.error_if_exists;
   options.paranoid_checks = immutable_db_options.paranoid_checks;
   options.env = immutable_db_options.env;
-  options.file_system = immutable_db_options.fs;
   options.rate_limiter = immutable_db_options.rate_limiter;
   options.sst_file_manager = immutable_db_options.sst_file_manager;
   options.info_log = immutable_db_options.info_log;
@@ -119,8 +118,6 @@ DBOptions BuildDBOptions(const ImmutableDBOptions& immutable_db_options,
       immutable_db_options.write_thread_slow_yield_usec;
   options.skip_stats_update_on_db_open =
       immutable_db_options.skip_stats_update_on_db_open;
-  options.skip_checking_sst_file_sizes_on_db_open =
-      immutable_db_options.skip_checking_sst_file_sizes_on_db_open;
   options.wal_recovery_mode = immutable_db_options.wal_recovery_mode;
   options.allow_2pc = immutable_db_options.allow_2pc;
   options.row_cache = immutable_db_options.row_cache;
@@ -144,7 +141,6 @@ DBOptions BuildDBOptions(const ImmutableDBOptions& immutable_db_options,
   options.avoid_unnecessary_blocking_io =
       immutable_db_options.avoid_unnecessary_blocking_io;
   options.log_readahead_size = immutable_db_options.log_readahead_size;
-  options.sst_file_checksum_func = immutable_db_options.sst_file_checksum_func;
   return options;
 }
 
@@ -1476,9 +1472,6 @@ std::unordered_map<std::string, OptionTypeInfo>
         {"skip_stats_update_on_db_open",
          {offsetof(struct DBOptions, skip_stats_update_on_db_open),
           OptionType::kBoolean, OptionVerificationType::kNormal, false, 0}},
-        {"skip_checking_sst_file_sizes_on_db_open",
-         {offsetof(struct DBOptions, skip_checking_sst_file_sizes_on_db_open),
-          OptionType::kBoolean, OptionVerificationType::kNormal, false, 0}},
         {"new_table_reader_for_compaction_inputs",
          {offsetof(struct DBOptions, new_table_reader_for_compaction_inputs),
           OptionType::kBoolean, OptionVerificationType::kNormal, false, 0}},
@@ -2121,4 +2114,4 @@ std::unordered_map<std::string, OptionTypeInfo>
 
 #endif  // !ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

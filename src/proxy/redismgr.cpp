@@ -33,36 +33,12 @@ int GR_RedisMgr::Init(GR_Config *pConfig)
     {
         case PROXY_ROUTE_TWEM:
         {
-            /*GR_TwemRoute *pRoute = new GR_TwemRoute();
-            this->m_pRoute = pRoute;
-            if (GR_OK != this->m_pRoute->Init(pConfig))
+            this->m_pRouteGroup = new GR_TwemRouteGroup();
+            if (GR_OK != this->m_pRouteGroup->Init(pConfig))
             {
-                GR_LOGE("init twem route failed");
+                GR_LOGE("redis group init failed.");
                 return GR_ERROR;
             }
-            // 将监听信息通过配置传递出去
-            if (!this->m_pRoute->GetListenInfo(pConfig->m_strIP, pConfig->m_usPort, pConfig->m_iTcpBack))
-            {
-                GR_LOGE("get listen address failed");
-                return GR_ERROR;
-            }
-
-            // 根据配置走不同的初始化流程
-            if (!this->m_pRoute->m_bSentinel)
-            {
-<<<<<<< HEAD
-                return this->TwemConnectToRedis();
-            }
-            else // 先和sentinel建立连接
-=======
-                return this->ConnectToRedis();
-            }*/
-            /*else // 先和sentinel建立连接
->>>>>>> remotes/origin/multi_service
-            {
-                this->m_pSentinelMgr = new GR_SentinelMgr(pRoute);
-                return this->m_pSentinelMgr->ConnectToSentinel();
-            }*/
             break;
         }
         case PROXY_ROUTE_CODIS:
@@ -97,48 +73,6 @@ int GR_RedisMgr::Init(GR_Config *pConfig)
         }
     }
     return GR_OK;
-}
-
-int GR_RedisMgr::TwemConnectToRedis()
-{
-    return GR_OK;
-    /*int iRet;
-    GR_RedisServer *pServer;
-    for (int i=0; i<this->m_pRoute->m_iSrvNum; i++)
-    {
-        pServer = this->m_pRoute->m_vServers[i];
-        iRet = pServer->Connect();
-        if (iRet != GR_OK)
-        {
-            GR_LOGE("connect to redis failed:%s", pServer->strInfo.c_str());
-            return GR_ERROR;
-        }
-    }
-    
-<<<<<<< HEAD
-=======
-    int iRet = GR_OK;
->>>>>>> remotes/origin/multi_service
-    GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
-    GR_AccessMgr *pMgr = &GR_Proxy::Instance()->m_AccessMgr;
-    // 启动监听端口
-    if (pConfig->m_iBAType != GR_PROXY_BA_IP)
-    {
-        iRet = pMgr->Listen(pConfig->m_strIP.c_str(), pConfig->m_usPort, 
-            pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
-    }
-    if (iRet != GR_OK)
-    {
-<<<<<<< HEAD
-        GR_LOGE("listen failed:%d", iRet);
-        exit(0);
-    }
-    return GR_OK;
-=======
-        GR_LOGE("listen failed.");
-        exit(0);
-    }
-    return GR_OK;*/
 }
 
 int GR_RedisMgr::ReplicateMsgToRedis(GR_ReplicaEvent *pEvent, GR_MsgIdenty *pIdenty)

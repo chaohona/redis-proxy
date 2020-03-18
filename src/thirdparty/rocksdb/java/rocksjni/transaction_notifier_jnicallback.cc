@@ -4,12 +4,12 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the callback "bridge" between Java and C++ for
-// ROCKSDB_NAMESPACE::TransactionNotifier.
+// rocksdb::TransactionNotifier.
 
 #include "rocksjni/transaction_notifier_jnicallback.h"
 #include "rocksjni/portal.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 TransactionNotifierJniCallback::TransactionNotifierJniCallback(JNIEnv* env,
     jobject jtransaction_notifier) : JniCallback(env, jtransaction_notifier) {
@@ -36,4 +36,4 @@ void TransactionNotifierJniCallback::SnapshotCreated(
 
   releaseJniEnv(attached_thread);
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

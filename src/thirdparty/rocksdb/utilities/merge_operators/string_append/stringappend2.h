@@ -18,7 +18,7 @@
 #include "rocksdb/merge_operator.h"
 #include "rocksdb/slice.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class StringAppendTESTOperator : public MergeOperator {
  public:
@@ -46,4 +46,4 @@ class StringAppendTESTOperator : public MergeOperator {
 
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb

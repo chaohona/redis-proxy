@@ -12,7 +12,7 @@
 #include "test_util/fault_injection_test_env.h"
 #include "test_util/testutil.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifndef ROCKSDB_LITE
 class ExternalSSTFileBasicTest
@@ -657,12 +657,12 @@ TEST_F(ExternalSSTFileBasicTest, FadviseTrigger) {
   const int kNumKeys = 10000;
 
   size_t total_fadvised_bytes = 0;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "SstFileWriter::Rep::InvalidatePageCache", [&](void* arg) {
         size_t fadvise_size = *(reinterpret_cast<size_t*>(arg));
         total_fadvised_bytes += fadvise_size;
       });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   std::unique_ptr<SstFileWriter> sst_file_writer;
 
@@ -689,7 +689,7 @@ TEST_F(ExternalSSTFileBasicTest, FadviseTrigger) {
   ASSERT_EQ(total_fadvised_bytes, sst_file_writer->FileSize());
   ASSERT_GT(total_fadvised_bytes, 0);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 TEST_F(ExternalSSTFileBasicTest, SyncFailure) {
@@ -794,45 +794,6 @@ TEST_F(ExternalSSTFileBasicTest, VerifyChecksumReadahead) {
   ASSERT_LE(senv.random_read_counter_.Read() - base_num_reads, 40);
 
   Destroy(options);
-}
-
-TEST_F(ExternalSSTFileBasicTest, IngestRangeDeletionTombstoneWithGlobalSeqno) {
-  for (int i = 5; i < 25; i++) {
-    ASSERT_OK(db_->Put(WriteOptions(), db_->DefaultColumnFamily(), Key(i),
-                       Key(i) + "_val"));
-  }
-
-  Options options = CurrentOptions();
-  options.disable_auto_compactions = true;
-  Reopen(options);
-  SstFileWriter sst_file_writer(EnvOptions(), options);
-
-  // file.sst (delete 0 => 30)
-  std::string file = sst_files_dir_ + "file.sst";
-  ASSERT_OK(sst_file_writer.Open(file));
-  ASSERT_OK(sst_file_writer.DeleteRange(Key(0), Key(30)));
-  ExternalSstFileInfo file_info;
-  ASSERT_OK(sst_file_writer.Finish(&file_info));
-  ASSERT_EQ(file_info.file_path, file);
-  ASSERT_EQ(file_info.num_entries, 0);
-  ASSERT_EQ(file_info.smallest_key, "");
-  ASSERT_EQ(file_info.largest_key, "");
-  ASSERT_EQ(file_info.num_range_del_entries, 1);
-  ASSERT_EQ(file_info.smallest_range_del_key, Key(0));
-  ASSERT_EQ(file_info.largest_range_del_key, Key(30));
-
-  IngestExternalFileOptions ifo;
-  ifo.move_files = true;
-  ifo.snapshot_consistency = true;
-  ifo.allow_global_seqno = true;
-  ifo.write_global_seqno = true;
-  ifo.verify_checksums_before_ingest = false;
-  ASSERT_OK(db_->IngestExternalFile({file}, ifo));
-
-  for (int i = 5; i < 25; i++) {
-    std::string res;
-    ASSERT_TRUE(db_->Get(ReadOptions(), Key(i), &res).IsNotFound());
-  }
 }
 
 TEST_P(ExternalSSTFileBasicTest, IngestionWithRangeDeletions) {
@@ -1158,10 +1119,10 @@ INSTANTIATE_TEST_CASE_P(ExternalSSTFileBasicTest, ExternalSSTFileBasicTest,
 
 #endif  // ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

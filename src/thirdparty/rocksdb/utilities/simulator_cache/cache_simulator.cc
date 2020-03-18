@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "db/dbformat.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 const std::string kGhostCachePrefix = "ghost_";
@@ -271,4 +271,4 @@ void BlockCacheTraceSimulator::Access(const BlockCacheTraceRecord& access) {
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

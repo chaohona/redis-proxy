@@ -53,8 +53,41 @@ GR_RedisEvent* GR_Route::Route(GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData, GR
 
 int GR_Route::Broadcast(GR_AccessEvent* pAccessEvent,GR_MsgIdenty *pIdenty, GR_MemPoolData  *pData)
 {
+    ASSERT(pAccessEvent!=nullptr);
+    pIdenty->iNeedWaitNum = this->m_iSrvNum;
+    GR_RedisEvent *pEvent = nullptr;
+    GR_RedisServer *pServer = nullptr;
+    int iRet = GR_OK;
+    for (int i=0; i<this->m_iSrvNum; i++)
+    {
+        pServer = this->m_vServers[i];
+        if (pServer == nullptr )
+        {
+            pIdenty->iGotNum += 1;
+            continue;
+        }
+        pEvent = pServer->pEvent;
+        if (pEvent == nullptr || !pEvent->ConnectOK())
+        {
+            pIdenty->iGotNum += 1;
+            continue;
+        }
+        iRet = pEvent->SendMsg(pData, pIdenty);
+        if (iRet != GR_OK)
+        {
+            pIdenty->iGotNum += 1;
+            continue;
+        }
+    }
+    if (pIdenty->iGotNum == pIdenty->iNeedWaitNum)
+    {
+        GR_MemPoolData *pData = GR_MsgProcess::Instance()->GetErrMsg(REDIS_RSP_COMM_ERR);
+        pIdenty->pData = nullptr;
+        pAccessEvent->DoReply(pData, pIdenty);
+    }
     return GR_OK;
 }
+
 
 bool GR_Route::GetListenInfo(string &strIP, uint16 &uiPort, int &iBackLog)
 {

@@ -12,7 +12,7 @@
 #include "file/filename.h"
 #include "rocksdb/db.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class CheckpointImpl : public Checkpoint {
  public:
@@ -74,6 +74,6 @@ class CheckpointImpl : public Checkpoint {
   DB* db_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  //  namespace rocksdb
 
 #endif  // ROCKSDB_LITE

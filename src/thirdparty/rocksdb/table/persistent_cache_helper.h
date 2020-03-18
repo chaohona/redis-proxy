@@ -10,7 +10,7 @@
 #include "table/format.h"
 #include "table/persistent_cache_options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 struct BlockContents;
 
@@ -41,4 +41,4 @@ class PersistentCacheHelper {
       BlockContents* contents);
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

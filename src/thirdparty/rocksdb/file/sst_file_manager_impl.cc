@@ -9,37 +9,35 @@
 #include <vector>
 
 #include "db/db_impl/db_impl.h"
-#include "env/composite_env_wrapper.h"
 #include "port/port.h"
 #include "rocksdb/env.h"
 #include "rocksdb/sst_file_manager.h"
 #include "test_util/sync_point.h"
 #include "util/mutexlock.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifndef ROCKSDB_LITE
-SstFileManagerImpl::SstFileManagerImpl(Env* env, std::shared_ptr<FileSystem> fs,
-                                       std::shared_ptr<Logger> logger,
+SstFileManagerImpl::SstFileManagerImpl(Env* env, std::shared_ptr<Logger> logger,
                                        int64_t rate_bytes_per_sec,
                                        double max_trash_db_ratio,
                                        uint64_t bytes_max_delete_chunk)
     : env_(env),
-      fs_(fs),
       logger_(logger),
       total_files_size_(0),
       in_progress_files_size_(0),
       compaction_buffer_size_(0),
       cur_compactions_reserved_size_(0),
       max_allowed_space_(0),
-      delete_scheduler_(env, fs_.get(), rate_bytes_per_sec, logger.get(), this,
+      delete_scheduler_(env, rate_bytes_per_sec, logger.get(), this,
                         max_trash_db_ratio, bytes_max_delete_chunk),
       cv_(&mu_),
       closing_(false),
       bg_thread_(nullptr),
       reserved_disk_buffer_(0),
       free_space_trigger_(0),
-      cur_instance_(nullptr) {}
+      cur_instance_(nullptr) {
+}
 
 SstFileManagerImpl::~SstFileManagerImpl() {
   Close();
@@ -62,21 +60,13 @@ void SstFileManagerImpl::Close() {
 Status SstFileManagerImpl::OnAddFile(const std::string& file_path,
                                      bool compaction) {
   uint64_t file_size;
-  Status s = fs_->GetFileSize(file_path, IOOptions(), &file_size, nullptr);
+  Status s = env_->GetFileSize(file_path, &file_size);
   if (s.ok()) {
     MutexLock l(&mu_);
     OnAddFileImpl(file_path, file_size, compaction);
   }
   TEST_SYNC_POINT("SstFileManagerImpl::OnAddFile");
   return s;
-}
-
-Status SstFileManagerImpl::OnAddFile(const std::string& file_path,
-                                     uint64_t file_size, bool compaction) {
-  MutexLock l(&mu_);
-  OnAddFileImpl(file_path, file_size, compaction);
-  TEST_SYNC_POINT("SstFileManagerImpl::OnAddFile");
-  return Status::OK();
 }
 
 Status SstFileManagerImpl::OnDeleteFile(const std::string& file_path) {
@@ -188,7 +178,7 @@ bool SstFileManagerImpl::EnoughRoomForCompaction(
         TableFileName(cfd->ioptions()->cf_paths, inputs[0][0]->fd.GetNumber(),
                       inputs[0][0]->fd.GetPathId());
     uint64_t free_space = 0;
-    fs_->GetFreeSpace(fn, IOOptions(), &free_space, nullptr);
+    env_->GetFreeSpace(fn, &free_space);
     // needed_headroom is based on current size reserved by compactions,
     // minus any files created by running compactions as they would count
     // against the reserved size. If user didn't specify any compaction
@@ -271,7 +261,7 @@ void SstFileManagerImpl::ClearError() {
     }
 
     uint64_t free_space = 0;
-    Status s = fs_->GetFreeSpace(path_, IOOptions(), &free_space, nullptr);
+    Status s = env_->GetFreeSpace(path_, &free_space);
     free_space = max_allowed_space_ > 0
                      ? std::min(max_allowed_space_, free_space)
                      : free_space;
@@ -316,8 +306,8 @@ void SstFileManagerImpl::ClearError() {
       // since the ErrorHandler::recovery_in_prog_ flag would be true
       cur_instance_ = error_handler;
       mu_.Unlock();
+      TEST_SYNC_POINT("SstFileManagerImpl::ClearError");
       s = error_handler->RecoverFromBGError();
-      TEST_SYNC_POINT("SstFileManagerImpl::ErrorCleared");
       mu_.Lock();
       // The DB instance might have been deleted while we were
       // waiting for the mutex, so check cur_instance_ to make sure its
@@ -427,8 +417,7 @@ bool SstFileManagerImpl::CancelErrorRecovery(ErrorHandler* handler) {
 Status SstFileManagerImpl::ScheduleFileDeletion(
     const std::string& file_path, const std::string& path_to_sync,
     const bool force_bg) {
-  TEST_SYNC_POINT_CALLBACK("SstFileManagerImpl::ScheduleFileDeletion",
-                           const_cast<std::string*>(&file_path));
+  TEST_SYNC_POINT("SstFileManagerImpl::ScheduleFileDeletion");
   return delete_scheduler_.DeleteFile(file_path, path_to_sync,
                                       force_bg);
 }
@@ -483,28 +472,8 @@ SstFileManager* NewSstFileManager(Env* env, std::shared_ptr<Logger> info_log,
                                   bool delete_existing_trash, Status* status,
                                   double max_trash_db_ratio,
                                   uint64_t bytes_max_delete_chunk) {
-  std::shared_ptr<FileSystem> fs;
-
-  if (env == Env::Default()) {
-    fs = FileSystem::Default();
-  } else {
-    fs.reset(new LegacyFileSystemWrapper(env));
-  }
-
-  return NewSstFileManager(env, fs, info_log, trash_dir, rate_bytes_per_sec,
-                           delete_existing_trash, status, max_trash_db_ratio,
-                           bytes_max_delete_chunk);
-}
-
-SstFileManager* NewSstFileManager(Env* env, std::shared_ptr<FileSystem> fs,
-                                  std::shared_ptr<Logger> info_log,
-                                  const std::string& trash_dir,
-                                  int64_t rate_bytes_per_sec,
-                                  bool delete_existing_trash, Status* status,
-                                  double max_trash_db_ratio,
-                                  uint64_t bytes_max_delete_chunk) {
   SstFileManagerImpl* res =
-      new SstFileManagerImpl(env, fs, info_log, rate_bytes_per_sec,
+      new SstFileManagerImpl(env, info_log, rate_bytes_per_sec,
                              max_trash_db_ratio, bytes_max_delete_chunk);
 
   // trash_dir is deprecated and not needed anymore, but if user passed it
@@ -512,7 +481,7 @@ SstFileManager* NewSstFileManager(Env* env, std::shared_ptr<FileSystem> fs,
   Status s;
   if (delete_existing_trash && trash_dir != "") {
     std::vector<std::string> files_in_trash;
-    s = fs->GetChildren(trash_dir, IOOptions(), &files_in_trash, nullptr);
+    s = env->GetChildren(trash_dir, &files_in_trash);
     if (s.ok()) {
       for (const std::string& trash_file : files_in_trash) {
         if (trash_file == "." || trash_file == "..") {
@@ -555,4 +524,4 @@ SstFileManager* NewSstFileManager(Env* /*env*/,
 
 #endif  // ROCKSDB_LITE
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

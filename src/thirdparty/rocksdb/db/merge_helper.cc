@@ -17,7 +17,7 @@
 #include "table/format.h"
 #include "table/internal_iterator.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 MergeHelper::MergeHelper(Env* env, const Comparator* user_comparator,
                          const MergeOperator* user_merge_operator,
@@ -414,4 +414,4 @@ CompactionFilter::Decision MergeHelper::FilterMerge(const Slice& user_key,
   return ret;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb

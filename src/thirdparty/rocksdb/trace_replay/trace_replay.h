@@ -13,7 +13,7 @@
 #include "rocksdb/options.h"
 #include "rocksdb/trace_reader_writer.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // This file contains Tracer and Replayer classes that enable capturing and
 // replaying RocksDB traces.
@@ -186,4 +186,4 @@ struct ReplayerWorkerArg {
   ReadOptions roptions;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

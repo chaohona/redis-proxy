@@ -11,7 +11,7 @@
 #include "db/db_impl/db_impl.h"
 #include "util/cast_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 void CancelAllBackgroundWork(DB* db, bool wait) {
   (static_cast_with_check<DBImpl, DB>(db->GetRootDB()))
@@ -41,16 +41,14 @@ Status VerifySstFileChecksum(const Options& options,
                              const EnvOptions& env_options,
                              const ReadOptions& read_options,
                              const std::string& file_path) {
-  std::unique_ptr<FSRandomAccessFile> file;
+  std::unique_ptr<RandomAccessFile> file;
   uint64_t file_size;
   InternalKeyComparator internal_comparator(options.comparator);
   ImmutableCFOptions ioptions(options);
 
-  Status s = ioptions.fs->NewRandomAccessFile(file_path,
-                                              FileOptions(env_options),
-                                              &file, nullptr);
+  Status s = ioptions.env->NewRandomAccessFile(file_path, &file, env_options);
   if (s.ok()) {
-    s = ioptions.fs->GetFileSize(file_path, IOOptions(), &file_size, nullptr);
+    s = ioptions.env->GetFileSize(file_path, &file_size);
   } else {
     return s;
   }
@@ -72,6 +70,6 @@ Status VerifySstFileChecksum(const Options& options,
   return s;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

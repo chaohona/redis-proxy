@@ -9,7 +9,7 @@
 #include "monitoring/statistics.h"
 #include "rocksdb/persistent_cache.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // PersistentCacheOptions
 //
@@ -31,4 +31,4 @@ struct PersistentCacheOptions {
   Statistics* statistics = nullptr;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

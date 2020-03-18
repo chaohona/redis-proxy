@@ -12,7 +12,7 @@
 
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // This is similar to std::unordered_map, except that it tries to avoid
 // allocating or deallocating memory as much as possible. With
@@ -64,4 +64,4 @@ class HashMap {
   }
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

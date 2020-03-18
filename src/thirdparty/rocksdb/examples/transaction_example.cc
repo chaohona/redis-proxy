@@ -11,7 +11,7 @@
 #include "rocksdb/utilities/transaction.h"
 #include "rocksdb/utilities/transaction_db.h"
 
-using namespace ROCKSDB_NAMESPACE;
+using namespace rocksdb;
 
 std::string kDBPath = "/tmp/rocksdb_transaction_example";
 
@@ -94,25 +94,14 @@ int main() {
   s = txn_db->Put(write_options, "abc", "xyz");
   assert(s.ok());
 
-  // Read the latest committed value.
-  s = txn->Get(read_options, "abc", &value);
-  assert(s.ok());
-  assert(value == "xyz");
-
-  // Read the snapshotted value.
-  read_options.snapshot = snapshot;
-  s = txn->Get(read_options, "abc", &value);
-  assert(s.ok());
-  assert(value == "def");
-
   // Attempt to read a key using the snapshot.  This will fail since
   // the previous write outside this txn conflicts with this read.
+  read_options.snapshot = snapshot;
   s = txn->GetForUpdate(read_options, "abc", &value);
   assert(s.IsBusy());
 
   txn->Rollback();
 
-  // Snapshot will be released upon deleting the transaction.
   delete txn;
   // Clear snapshot from read options since it is no longer valid
   read_options.snapshot = nullptr;
@@ -136,13 +125,10 @@ int main() {
   // Do some reads and writes to key "x"
   read_options.snapshot = txn_db->GetSnapshot();
   s = txn->Get(read_options, "x", &value);
-  assert(s.IsNotFound());
-  s = txn->Put("x", "x");
-  assert(s.ok());
+  txn->Put("x", "x");
 
   // Do a write outside of the transaction to key "y"
-  s = txn_db->Put(write_options, "y", "y1");
-  assert(s.ok());
+  s = txn_db->Put(write_options, "y", "y");
 
   // Set a new snapshot in the transaction
   txn->SetSnapshot();
@@ -153,10 +139,7 @@ int main() {
   // Since the snapshot was advanced, the write done outside of the
   // transaction does not conflict.
   s = txn->GetForUpdate(read_options, "y", &value);
-  assert(s.ok());
-  assert(value == "y1");
-  s = txn->Put("y", "y2");
-  assert(s.ok());
+  txn->Put("y", "y");
 
   // Decide we want to revert the last write from this transaction.
   txn->RollbackToSavePoint();
@@ -167,15 +150,6 @@ int main() {
   delete txn;
   // Clear snapshot from read options since it is no longer valid
   read_options.snapshot = nullptr;
-
-  // db state is at the save point.
-  s = txn_db->Get(read_options, "x", &value);
-  assert(s.ok());
-  assert(value == "x");
-
-  s = txn_db->Get(read_options, "y", &value);
-  assert(s.ok());
-  assert(value == "y1");
 
   // Cleanup
   delete txn_db;

@@ -12,7 +12,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/statistics.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class RateLimiter {
  public:
@@ -136,4 +136,4 @@ extern RateLimiter* NewGenericRateLimiter(
     RateLimiter::Mode mode = RateLimiter::Mode::kWritesOnly,
     bool auto_tuned = false);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

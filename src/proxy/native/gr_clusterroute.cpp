@@ -145,14 +145,14 @@ int GR_ClusterSeedEvent::ParseClusterNodes(GR_RedisMsgResults &Results)
             {
                 if (!pConfig->m_bSupportClusterSlots)
                 {
-                    iRet = pMgr->Listen(pConfig->m_strIP.c_str(), pConfig->m_usPort, 
+                    iRet = pMgr->Listen(this->m_pRoute->m_strListenIP.c_str(), this->m_pRoute->m_usListenPort, 
                         pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
                 }
                 else
                 {
                     // 如果需要支持cluster slots命令，则启动3个端口，端口号在配置的基础上加0-2
                     uint16 usPort = pConfig->m_usPort + (GR_Proxy::Instance()->m_ulInnerId%GR_CLUSTER_SLOTS_MIX_CASE);
-                    iRet = pMgr->Listen(pConfig->m_strIP.c_str(), usPort, 
+                    iRet = pMgr->Listen(this->m_pRoute->m_strListenIP.c_str(), this->m_pRoute->m_usListenPort, 
                         pConfig->m_iTcpBack, pConfig->m_iBAType == GR_PROXY_BA_SYSTEM);
                 }
             }
@@ -282,6 +282,10 @@ int GR_ClusterSeedEvent::ConnectResult()
         GR_Timer::Instance()->AddTimer(GR_GetClusterNodesCB, this->m_pRoute, 500, true);
         this->Close(false);
         return GR_ERROR;
+    }
+    if (this->m_Status == GR_CONNECT_CONNECTED)
+    {
+        return GR_OK;
     }
     this->m_Status = GR_CONNECT_CONNECTED;
     GR_Epoll::Instance()->AddEventRead(this);
@@ -535,7 +539,7 @@ GR_RedisEvent* GR_ClusterRoute::Route(GR_MsgIdenty *pIdenty, GR_MemPoolData  *pD
     //pIdenty->bRedirect = true;
     //}
     pIdenty->iSlot = uiSlot;
-    
+
     // TODO 如果为nullptr则获取slots对应的redis
     return pServer!=nullptr?pServer->pEvent:nullptr;
 }

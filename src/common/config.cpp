@@ -287,6 +287,22 @@ int GR_Config::Load(char* szCfgPath)
             {
                 this->m_strTinyConfig = c->second.as<string>();
             }
+            else if (content == "store-server")
+            {
+                if (GR_OK != this->ParseStore(c->second))
+                {
+                    GR_STDERR("parse store-server failed.");
+                    return GR_ERROR;
+                }
+            }
+            else if (content == "aof-loads")
+            {
+                if (GR_OK != this->ParseAof(c->second))
+                {
+                    GR_STDERR("parse aof info failed.");
+                    return GR_ERROR;
+                }
+            }
         }
 
         if (GR_OK != this->ValidCheck())
@@ -454,6 +470,26 @@ int GR_Config::ParseReplicate(YAML::Node &node)
         {
             this->m_ReplicateInfo.m_vFilters.push_back(filters[i].as<string>());
         }
+    }
+    return GR_OK;
+}
+
+int GR_Config::ParseStore(YAML::Node &node)
+{
+    if (!node["dbpath"])
+    {
+        GR_LOGE("there should has dbpath.");
+        return GR_ERROR;
+    }
+    this->m_storeInfo.strDBPath = node["dbpath"].as<string>();
+    return GR_OK;
+}
+
+int GR_Config::ParseAof(YAML::Node &node)
+{
+    if (node["unix-time"])
+    {
+        this->m_aofInfo.lUnixTime = node["unix-time"].as<long>();
     }
     return GR_OK;
 }

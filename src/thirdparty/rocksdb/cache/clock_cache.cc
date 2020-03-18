@@ -11,7 +11,7 @@
 
 #ifndef SUPPORT_CLOCK_CACHE
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 std::shared_ptr<Cache> NewClockCache(
     size_t /*capacity*/, int /*num_shard_bits*/, bool /*strict_capacity_limit*/,
@@ -20,7 +20,7 @@ std::shared_ptr<Cache> NewClockCache(
   return nullptr;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #else
 
@@ -41,7 +41,7 @@ std::shared_ptr<Cache> NewClockCache(
 #include "util/autovector.h"
 #include "util/mutexlock.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 
@@ -756,6 +756,6 @@ std::shared_ptr<Cache> NewClockCache(
       capacity, num_shard_bits, strict_capacity_limit, metadata_charge_policy);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // SUPPORT_CLOCK_CACHE

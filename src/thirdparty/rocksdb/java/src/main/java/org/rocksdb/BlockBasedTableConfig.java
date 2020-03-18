@@ -507,12 +507,7 @@ public class BlockBasedTableConfig extends TableFormatConfig {
     return this;
   }
 
-  /**
-   * Set the filter.
-   *
-   * @param filter the filter
-   * @return the reference to the current config.
-   *
+  /*
    * @deprecated Use {@link #setFilterPolicy(Filter)}
    */
   @Deprecated

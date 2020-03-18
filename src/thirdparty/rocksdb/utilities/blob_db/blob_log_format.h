@@ -18,7 +18,7 @@
 #include "rocksdb/status.h"
 #include "rocksdb/types.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace blob_db {
 
 constexpr uint32_t kMagicNumber = 2395959;  // 0x00248f37
@@ -129,5 +129,5 @@ struct BlobLogRecord {
 };
 
 }  // namespace blob_db
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LITE

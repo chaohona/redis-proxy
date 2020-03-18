@@ -34,7 +34,7 @@
 
 using std::string;
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 INSTANTIATE_TEST_CASE_P(
     DBAsBaseDB, TransactionTest,
@@ -282,7 +282,7 @@ TEST_P(TransactionTest, WaitingTxn) {
   ASSERT_TRUE(txn1);
   ASSERT_TRUE(txn2);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "TransactionLockMgr::AcquireWithTimeout:WaitingTxn", [&](void* /*arg*/) {
         std::string key;
         uint32_t cf_id;
@@ -335,7 +335,7 @@ TEST_P(TransactionTest, WaitingTxn) {
   ASSERT_EQ(cf_iterator->second.ids.size(), 1);
   ASSERT_EQ(cf_iterator->second.ids[0], txn1->GetID());
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   s = txn2->GetForUpdate(read_options, "foo", &value);
   ASSERT_TRUE(s.IsTimedOut());
@@ -343,8 +343,8 @@ TEST_P(TransactionTest, WaitingTxn) {
   ASSERT_EQ(get_perf_context()->key_lock_wait_count, 1);
   ASSERT_GE(get_perf_context()->key_lock_wait_time, 0);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
   delete cfa;
   delete txn1;
@@ -508,10 +508,10 @@ TEST_P(TransactionTest, DeadlockCycleShared) {
   }
 
   std::atomic<uint32_t> checkpoints(0);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "TransactionLockMgr::AcquireWithTimeout:WaitingTxn",
       [&](void* /*arg*/) { checkpoints.fetch_add(1); });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   // We want the leaf transactions to block and hold everyone back.
   std::vector<port::Thread> threads;
@@ -531,8 +531,8 @@ TEST_P(TransactionTest, DeadlockCycleShared) {
     /* sleep override */
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
   // Complete the cycle T[16 - 31] -> T1
   for (uint32_t i = 15; i < 31; i++) {
@@ -641,10 +641,10 @@ TEST_P(TransactionTest, DeadlockCycleShared) {
   }
 
   std::atomic<uint32_t> checkpoints_shared(0);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "TransactionLockMgr::AcquireWithTimeout:WaitingTxn",
       [&](void* /*arg*/) { checkpoints_shared.fetch_add(1); });
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   std::vector<port::Thread> threads_shared;
   for (uint32_t i = 0; i < 1; i++) {
@@ -663,8 +663,8 @@ TEST_P(TransactionTest, DeadlockCycleShared) {
     /* sleep override */
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
   // Complete the cycle T2 -> T1 with a shared lock.
   auto s = txns_shared[1]->GetForUpdate(read_options, "0", nullptr, false);
@@ -714,10 +714,10 @@ TEST_P(TransactionStressTest, DeadlockCycle) {
     }
 
     std::atomic<uint32_t> checkpoints(0);
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+    rocksdb::SyncPoint::GetInstance()->SetCallBack(
         "TransactionLockMgr::AcquireWithTimeout:WaitingTxn",
         [&](void* /*arg*/) { checkpoints.fetch_add(1); });
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+    rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
     // We want the last transaction in the chain to block and hold everyone
     // back.
@@ -737,8 +737,8 @@ TEST_P(TransactionStressTest, DeadlockCycle) {
       /* sleep override */
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
+    rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+    rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
     // Complete the cycle Tlen -> T1
     auto s = txns[len - 1]->GetForUpdate(read_options, "0", nullptr);
@@ -1453,7 +1453,7 @@ TEST_P(TransactionTest, DISABLED_TwoPhaseMultiThreadTest) {
   std::atomic<uint32_t> t_wait_on_prepare(0);
   std::atomic<uint32_t> t_wait_on_commit(0);
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "WriteThread::JoinBatchGroup:Wait", [&](void* arg) {
         auto* writer = reinterpret_cast<WriteThread::Writer*>(arg);
 
@@ -1474,7 +1474,7 @@ TEST_P(TransactionTest, DISABLED_TwoPhaseMultiThreadTest) {
         }
       });
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   // do all the writes
   std::vector<port::Thread> threads;
@@ -1485,8 +1485,8 @@ TEST_P(TransactionTest, DISABLED_TwoPhaseMultiThreadTest) {
     t.join();
   }
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
 
   ReadOptions read_options;
   std::string value;
@@ -2881,8 +2881,8 @@ TEST_P(TransactionTest, MultiGetLargeBatchedTest) {
   s = wb.Put(handles[1], std::to_string(2), "new_val" + std::to_string(2));
   ASSERT_OK(s);
   // Write a lot of merges so when we call MultiGetFromBatchAndDB later on,
-  // it is forced to use std::vector in ROCKSDB_NAMESPACE::autovector to
-  // allocate MergeContexts. The number of merges needs to be >
+  // it is forced to use std::vector in rocksdb::autovector to allocate
+  // MergeContexts. The number of merges needs to be >
   // MultiGetContext::MAX_BATCH_SIZE
   for (int i = 8; i < MultiGetContext::MAX_BATCH_SIZE + 24; ++i) {
     s = wb.Merge(handles[1], std::to_string(i), "merge");
@@ -5208,9 +5208,9 @@ TEST_P(TransactionTest, ToggleAutoCompactionTest) {
 TEST_P(TransactionStressTest, ExpiredTransactionDataRace1) {
   // In this test, txn1 should succeed committing,
   // as the callback is called after txn1 starts committing.
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->LoadDependency(
+  rocksdb::SyncPoint::GetInstance()->LoadDependency(
       {{"TransactionTest::ExpirableTransactionDataRace:1"}});
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "TransactionTest::ExpirableTransactionDataRace:1", [&](void* /*arg*/) {
         WriteOptions write_options;
         TransactionOptions txn_options;
@@ -5228,7 +5228,7 @@ TEST_P(TransactionStressTest, ExpiredTransactionDataRace1) {
         delete txn2;
       });
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
 
   WriteOptions write_options;
   TransactionOptions txn_options;
@@ -5248,7 +5248,7 @@ TEST_P(TransactionStressTest, ExpiredTransactionDataRace1) {
   ASSERT_EQ("1", value);
 
   delete txn1;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
+  rocksdb::SyncPoint::GetInstance()->DisableProcessing();
 }
 
 #ifndef ROCKSDB_VALGRIND_RUN
@@ -5575,7 +5575,7 @@ class ThreeBytewiseComparator : public Comparator {
     Slice nb = Slice(b.data(), b.size() < 3 ? b.size() : 3);
     return na == nb;
   }
-  // These methods below don't seem relevant to this test. Implement them if
+  // This methods below dont seem relevant to this test. Implement them if
   // proven othersize.
   void FindShortestSeparator(std::string* start,
                              const Slice& limit) const override {
@@ -5593,7 +5593,7 @@ TEST_P(TransactionTest, GetWithoutSnapshot) {
   WriteOptions write_options;
   std::atomic<bool> finish = {false};
   db->Put(write_options, "key", "value");
-  ROCKSDB_NAMESPACE::port::Thread commit_thread([&]() {
+  rocksdb::port::Thread commit_thread([&]() {
     for (int i = 0; i < 100; i++) {
       TransactionOptions txn_options;
       Transaction* txn = db->BeginTransaction(write_options, txn_options);
@@ -5606,7 +5606,7 @@ TEST_P(TransactionTest, GetWithoutSnapshot) {
     }
     finish = true;
   });
-  ROCKSDB_NAMESPACE::port::Thread read_thread([&]() {
+  rocksdb::port::Thread read_thread([&]() {
     while (!finish) {
       ReadOptions ropt;
       PinnableSlice pinnable_val;
@@ -6116,96 +6116,7 @@ TEST_P(TransactionTest, ReseekOptimization) {
   delete txn0;
 }
 
-// After recovery in kPointInTimeRecovery mode, the corrupted log file remains
-// there. The new log files should be still read succesfully during recovery of
-// the 2nd crash.
-TEST_P(TransactionTest, DoubleCrashInRecovery) {
-  for (const bool manual_wal_flush : {false, true}) {
-    for (const bool write_after_recovery : {false, true}) {
-      options.wal_recovery_mode = WALRecoveryMode::kPointInTimeRecovery;
-      options.manual_wal_flush = manual_wal_flush;
-      ReOpen();
-      std::string cf_name = "two";
-      ColumnFamilyOptions cf_options;
-      ColumnFamilyHandle* cf_handle = nullptr;
-      ASSERT_OK(db->CreateColumnFamily(cf_options, cf_name, &cf_handle));
-
-      // Add a prepare entry to prevent the older logs from being deleted.
-      WriteOptions write_options;
-      TransactionOptions txn_options;
-      Transaction* txn = db->BeginTransaction(write_options, txn_options);
-      ASSERT_OK(txn->SetName("xid"));
-      ASSERT_OK(txn->Put(Slice("foo-prepare"), Slice("bar-prepare")));
-      ASSERT_OK(txn->Prepare());
-
-      FlushOptions flush_ops;
-      db->Flush(flush_ops);
-      // Now we have a log that cannot be deleted
-
-      ASSERT_OK(db->Put(write_options, cf_handle, "foo1", "bar1"));
-      // Flush only the 2nd cf
-      db->Flush(flush_ops, cf_handle);
-
-      // The value is large enough to be touched by the corruption we ingest
-      // below.
-      std::string large_value(400, ' ');
-      // key/value not touched by corruption
-      ASSERT_OK(db->Put(write_options, "foo2", "bar2"));
-      // key/value touched by corruption
-      ASSERT_OK(db->Put(write_options, "foo3", large_value));
-      // key/value not touched by corruption
-      ASSERT_OK(db->Put(write_options, "foo4", "bar4"));
-
-      db->FlushWAL(true);
-      DBImpl* db_impl = reinterpret_cast<DBImpl*>(db->GetRootDB());
-      uint64_t wal_file_id = db_impl->TEST_LogfileNumber();
-      std::string fname = LogFileName(dbname, wal_file_id);
-      reinterpret_cast<PessimisticTransactionDB*>(db)->TEST_Crash();
-      delete txn;
-      delete cf_handle;
-      delete db;
-      db = nullptr;
-
-      // Corrupt the last log file in the middle, so that it is not corrupted
-      // in the tail.
-      std::string file_content;
-      ASSERT_OK(ReadFileToString(env, fname, &file_content));
-      file_content[400] = 'h';
-      file_content[401] = 'a';
-      ASSERT_OK(env->DeleteFile(fname));
-      ASSERT_OK(WriteStringToFile(env, file_content, fname, true));
-
-      // Recover from corruption
-      std::vector<ColumnFamilyHandle*> handles;
-      std::vector<ColumnFamilyDescriptor> column_families;
-      column_families.push_back(ColumnFamilyDescriptor(kDefaultColumnFamilyName,
-                                                       ColumnFamilyOptions()));
-      column_families.push_back(
-          ColumnFamilyDescriptor("two", ColumnFamilyOptions()));
-      ASSERT_OK(ReOpenNoDelete(column_families, &handles));
-
-      if (write_after_recovery) {
-        // Write data to the log right after the corrupted log
-        ASSERT_OK(db->Put(write_options, "foo5", large_value));
-      }
-
-      // Persist data written to WAL during recovery or by the last Put
-      db->FlushWAL(true);
-      // 2nd crash to recover while having a valid log after the corrupted one.
-      ASSERT_OK(ReOpenNoDelete(column_families, &handles));
-      assert(db != nullptr);
-      txn = db->GetTransactionByName("xid");
-      ASSERT_TRUE(txn != nullptr);
-      ASSERT_OK(txn->Commit());
-      delete txn;
-      for (auto handle : handles) {
-        delete handle;
-      }
-    }
-  }
-}
-
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

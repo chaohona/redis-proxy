@@ -10,15 +10,14 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "db/version_edit.h"
 #include "port/port.h"
 #include "rocksdb/status.h"
+#include "table/table_builder.h"
 #include "rocksdb/table.h"
 #include "rocksdb/table_properties.h"
-#include "table/table_builder.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class CuckooTableBuilder: public TableBuilder {
  public:
@@ -66,12 +65,6 @@ class CuckooTableBuilder: public TableBuilder {
   uint64_t FileSize() const override;
 
   TableProperties GetTableProperties() const override { return properties_; }
-
-  // Get file checksum
-  const std::string& GetFileChecksum() const override { return file_checksum_; }
-
-  // Get file checksum function name
-  const char* GetFileChecksumFuncName() const override;
 
  private:
   struct CuckooBucket {
@@ -126,11 +119,8 @@ class CuckooTableBuilder: public TableBuilder {
   std::string smallest_user_key_ = "";
 
   bool closed_;  // Either Finish() or Abandon() has been called.
-
-  // Store file checksum. If checksum is disabled, its value is "0"
-  std::string file_checksum_ = kUnknownFileChecksum;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

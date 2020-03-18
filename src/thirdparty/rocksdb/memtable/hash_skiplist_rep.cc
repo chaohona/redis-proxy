@@ -18,7 +18,7 @@
 #include "rocksdb/slice_transform.h"
 #include "util/murmurhash.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace {
 
 class HashSkipListRep : public MemTableRep {
@@ -345,5 +345,5 @@ MemTableRepFactory* NewHashSkipListRepFactory(
       skiplist_branching_factor);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb
 #endif  // ROCKSDB_LITE

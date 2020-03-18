@@ -14,7 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include "db/version_edit.h"
 #include "rocksdb/flush_block_policy.h"
 #include "rocksdb/listener.h"
 #include "rocksdb/options.h"
@@ -23,7 +22,7 @@
 #include "table/table_builder.h"
 #include "util/compression.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class BlockBuilder;
 class BlockHandle;
@@ -92,12 +91,6 @@ class BlockBasedTableBuilder : public TableBuilder {
   // Get table properties
   TableProperties GetTableProperties() const override;
 
-  // Get file checksum
-  const std::string& GetFileChecksum() const override { return file_checksum_; }
-
-  // Get file checksum function name
-  const char* GetFileChecksumFuncName() const override;
-
  private:
   bool ok() const { return status().ok(); }
 
@@ -143,9 +136,6 @@ class BlockBasedTableBuilder : public TableBuilder {
   // Some compression libraries fail when the raw size is bigger than int. If
   // uncompressed size is bigger than kCompressionSizeLimit, don't compress it
   const uint64_t kCompressionSizeLimit = std::numeric_limits<int>::max();
-
-  // Store file checksum. If checksum is disabled, its value is "0".
-  std::string file_checksum_ = kUnknownFileChecksum;
 };
 
 Slice CompressBlock(const Slice& raw, const CompressionInfo& info,
@@ -154,4 +144,4 @@ Slice CompressBlock(const Slice& raw, const CompressionInfo& info,
                     std::string* sampled_output_fast,
                     std::string* sampled_output_slow);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

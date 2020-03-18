@@ -12,7 +12,7 @@
 #include "util/coding.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // BlobIndex is a pointer to the blob and metadata of the blob. The index is
 // stored in base DB as ValueType::kTypeBlobIndex.
@@ -111,7 +111,7 @@ class BlobIndex {
     return Status::OK();
   }
 
-  std::string DebugString(bool output_hex) const {
+  std::string DebugString(bool output_hex) {
     std::ostringstream oss;
 
     if (IsInlined()) {
@@ -175,5 +175,5 @@ class BlobIndex {
   CompressionType compression_ = kNoCompression;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LITE

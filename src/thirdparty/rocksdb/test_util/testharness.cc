@@ -11,7 +11,7 @@
 #include <string>
 #include <thread>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace test {
 
 ::testing::AssertionResult AssertStatus(const char* s_expr, const Status& s) {
@@ -53,4 +53,4 @@ int RandomSeed() {
 }
 
 }  // namespace test
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

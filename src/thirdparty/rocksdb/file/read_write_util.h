@@ -9,26 +9,24 @@
 
 #pragma once
 #include <atomic>
-#include "file/sequence_file_reader.h"
 #include "rocksdb/env.h"
-#include "rocksdb/file_system.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // Returns a WritableFile.
 //
 // env     : the Env.
 // fname   : the file name.
 // result  : output arg. A WritableFile based on `fname` returned.
 // options : the Env Options.
-extern IOStatus NewWritableFile(FileSystem* fs, const std::string& fname,
-                                std::unique_ptr<FSWritableFile>* result,
-                                const FileOptions& options);
+extern Status NewWritableFile(Env* env, const std::string& fname,
+                              std::unique_ptr<WritableFile>* result,
+                              const EnvOptions& options);
 
 // Read a single line from a file.
-bool ReadOneLine(std::istringstream* iss, SequentialFileReader* seq_file_reader,
+bool ReadOneLine(std::istringstream* iss, SequentialFile* seq_file,
                  std::string* output, bool* has_data, Status* result);
 
 #ifndef NDEBUG
 bool IsFileSectorAligned(const size_t off, size_t sector_size);
 #endif  // NDEBUG
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

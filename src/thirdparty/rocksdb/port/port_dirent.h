@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #elif defined(OS_WIN)
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace port {
 
 struct dirent {
@@ -39,6 +39,6 @@ using port::opendir;
 using port::readdir;
 using port::closedir;
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // OS_WIN

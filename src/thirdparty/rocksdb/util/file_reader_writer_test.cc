@@ -5,7 +5,6 @@
 //
 #include <algorithm>
 #include <vector>
-#include "env/composite_env_wrapper.h"
 #include "file/random_access_file_reader.h"
 #include "file/readahead_raf.h"
 #include "file/sequence_file_reader.h"
@@ -14,7 +13,7 @@
 #include "test_util/testutil.h"
 #include "util/random.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class WritableFileWriterTest : public testing::Test {};
 
@@ -77,8 +76,7 @@ TEST_F(WritableFileWriterTest, RangeSync) {
   env_options.bytes_per_sync = kMb;
   std::unique_ptr<FakeWF> wf(new FakeWF);
   std::unique_ptr<WritableFileWriter> writer(
-      new WritableFileWriter(NewLegacyWritableFileWrapper(std::move(wf)),
-                             "" /* don't care */, env_options));
+      new WritableFileWriter(std::move(wf), "" /* don't care */, env_options));
   Random r(301);
   std::unique_ptr<char[]> large_buf(new char[10 * kMb]);
   for (int i = 0; i < 1000; i++) {
@@ -159,9 +157,8 @@ TEST_F(WritableFileWriterTest, IncrementalBuffer) {
                                           false,
 #endif
                                           no_flush));
-    std::unique_ptr<WritableFileWriter> writer(
-        new WritableFileWriter(NewLegacyWritableFileWrapper(std::move(wf)),
-                               "" /* don't care */, env_options));
+    std::unique_ptr<WritableFileWriter> writer(new WritableFileWriter(
+        std::move(wf), "" /* don't care */, env_options));
 
     std::string target;
     for (int i = 0; i < 20; i++) {
@@ -215,15 +212,12 @@ TEST_F(WritableFileWriterTest, AppendStatusReturn) {
   std::unique_ptr<FakeWF> wf(new FakeWF());
   wf->Setuse_direct_io(true);
   std::unique_ptr<WritableFileWriter> writer(
-      new WritableFileWriter(NewLegacyWritableFileWrapper(std::move(wf)),
-                             "" /* don't care */, EnvOptions()));
+      new WritableFileWriter(std::move(wf), "" /* don't care */, EnvOptions()));
 
   ASSERT_OK(writer->Append(std::string(2 * kMb, 'a')));
 
   // Next call to WritableFile::Append() should fail
-  LegacyWritableFileWrapper* file =
-      static_cast<LegacyWritableFileWrapper*>(writer->writable_file());
-  static_cast<FakeWF*>(file->target())->SetIOError(true);
+  dynamic_cast<FakeWF*>(writer->writable_file())->SetIOError(true);
   ASSERT_NOK(writer->Append(std::string(2 * kMb, 'b')));
 }
 #endif
@@ -266,13 +260,13 @@ class ReadaheadRandomAccessFileTest
   std::unique_ptr<char[]> scratch_;
 };
 
-TEST_P(ReadaheadRandomAccessFileTest, EmptySourceStr) {
+TEST_P(ReadaheadRandomAccessFileTest, EmptySourceStrTest) {
   ASSERT_EQ("", Read(0, 1));
   ASSERT_EQ("", Read(0, 0));
   ASSERT_EQ("", Read(13, 13));
 }
 
-TEST_P(ReadaheadRandomAccessFileTest, SourceStrLenLessThanReadaheadSize) {
+TEST_P(ReadaheadRandomAccessFileTest, SourceStrLenLessThanReadaheadSizeTest) {
   std::string str = "abcdefghijklmnopqrs";
   ResetSourceStr(str);
   ASSERT_EQ(str.substr(3, 4), Read(3, 4));
@@ -283,7 +277,8 @@ TEST_P(ReadaheadRandomAccessFileTest, SourceStrLenLessThanReadaheadSize) {
   ASSERT_EQ("", Read(100, 100));
 }
 
-TEST_P(ReadaheadRandomAccessFileTest, SourceStrLenGreaterThanReadaheadSize) {
+TEST_P(ReadaheadRandomAccessFileTest,
+       SourceStrLenGreaterThanReadaheadSizeTest) {
   Random rng(42);
   for (int k = 0; k < 100; ++k) {
     size_t strLen = k * GetReadaheadSize() +
@@ -300,7 +295,7 @@ TEST_P(ReadaheadRandomAccessFileTest, SourceStrLenGreaterThanReadaheadSize) {
   }
 }
 
-TEST_P(ReadaheadRandomAccessFileTest, ReadExceedsReadaheadSize) {
+TEST_P(ReadaheadRandomAccessFileTest, ReadExceedsReadaheadSizeTest) {
   Random rng(7);
   size_t strLen = 4 * GetReadaheadSize() +
                   rng.Uniform(static_cast<int>(GetReadaheadSize()));
@@ -317,16 +312,16 @@ TEST_P(ReadaheadRandomAccessFileTest, ReadExceedsReadaheadSize) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    EmptySourceStr, ReadaheadRandomAccessFileTest,
+    EmptySourceStrTest, ReadaheadRandomAccessFileTest,
     ::testing::ValuesIn(ReadaheadRandomAccessFileTest::GetReadaheadSizeList()));
 INSTANTIATE_TEST_CASE_P(
-    SourceStrLenLessThanReadaheadSize, ReadaheadRandomAccessFileTest,
+    SourceStrLenLessThanReadaheadSizeTest, ReadaheadRandomAccessFileTest,
     ::testing::ValuesIn(ReadaheadRandomAccessFileTest::GetReadaheadSizeList()));
 INSTANTIATE_TEST_CASE_P(
-    SourceStrLenGreaterThanReadaheadSize, ReadaheadRandomAccessFileTest,
+    SourceStrLenGreaterThanReadaheadSizeTest, ReadaheadRandomAccessFileTest,
     ::testing::ValuesIn(ReadaheadRandomAccessFileTest::GetReadaheadSizeList()));
 INSTANTIATE_TEST_CASE_P(
-    ReadExceedsReadaheadSize, ReadaheadRandomAccessFileTest,
+    ReadExceedsReadaheadSizeTest, ReadaheadRandomAccessFileTest,
     ::testing::ValuesIn(ReadaheadRandomAccessFileTest::GetReadaheadSizeList()));
 
 class ReadaheadSequentialFileTest : public testing::Test,
@@ -348,10 +343,10 @@ class ReadaheadSequentialFileTest : public testing::Test,
   }
   void Skip(size_t n) { test_read_holder_->Skip(n); }
   void ResetSourceStr(const std::string& str = "") {
-    auto read_holder = std::unique_ptr<SequentialFile>(
-        new test::SeqStringSource(str, &seq_read_count_));
-    test_read_holder_.reset(new SequentialFileReader(
-        NewLegacySequentialFileWrapper(read_holder), "test", readahead_size_));
+    auto read_holder =
+        std::unique_ptr<SequentialFile>(new test::SeqStringSource(str));
+    test_read_holder_.reset(new SequentialFileReader(std::move(read_holder),
+                                                     "test", readahead_size_));
   }
   size_t GetReadaheadSize() const { return readahead_size_; }
 
@@ -359,16 +354,15 @@ class ReadaheadSequentialFileTest : public testing::Test,
   size_t readahead_size_;
   std::unique_ptr<SequentialFileReader> test_read_holder_;
   std::unique_ptr<char[]> scratch_;
-  std::atomic<int> seq_read_count_;
 };
 
-TEST_P(ReadaheadSequentialFileTest, EmptySourceStr) {
+TEST_P(ReadaheadSequentialFileTest, EmptySourceStrTest) {
   ASSERT_EQ("", Read(0));
   ASSERT_EQ("", Read(1));
   ASSERT_EQ("", Read(13));
 }
 
-TEST_P(ReadaheadSequentialFileTest, SourceStrLenLessThanReadaheadSize) {
+TEST_P(ReadaheadSequentialFileTest, SourceStrLenLessThanReadaheadSizeTest) {
   std::string str = "abcdefghijklmnopqrs";
   ResetSourceStr(str);
   ASSERT_EQ(str.substr(0, 3), Read(3));
@@ -377,7 +371,7 @@ TEST_P(ReadaheadSequentialFileTest, SourceStrLenLessThanReadaheadSize) {
   ASSERT_EQ("", Read(100));
 }
 
-TEST_P(ReadaheadSequentialFileTest, SourceStrLenGreaterThanReadaheadSize) {
+TEST_P(ReadaheadSequentialFileTest, SourceStrLenGreaterThanReadaheadSizeTest) {
   Random rng(42);
   for (int s = 0; s < 1; ++s) {
     for (int k = 0; k < 100; ++k) {
@@ -400,7 +394,7 @@ TEST_P(ReadaheadSequentialFileTest, SourceStrLenGreaterThanReadaheadSize) {
   }
 }
 
-TEST_P(ReadaheadSequentialFileTest, ReadExceedsReadaheadSize) {
+TEST_P(ReadaheadSequentialFileTest, ReadExceedsReadaheadSizeTest) {
   Random rng(42);
   for (int s = 0; s < 1; ++s) {
     for (int k = 0; k < 100; ++k) {
@@ -425,18 +419,18 @@ TEST_P(ReadaheadSequentialFileTest, ReadExceedsReadaheadSize) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    EmptySourceStr, ReadaheadSequentialFileTest,
+    EmptySourceStrTest, ReadaheadSequentialFileTest,
     ::testing::ValuesIn(ReadaheadSequentialFileTest::GetReadaheadSizeList()));
 INSTANTIATE_TEST_CASE_P(
-    SourceStrLenLessThanReadaheadSize, ReadaheadSequentialFileTest,
+    SourceStrLenLessThanReadaheadSizeTest, ReadaheadSequentialFileTest,
     ::testing::ValuesIn(ReadaheadSequentialFileTest::GetReadaheadSizeList()));
 INSTANTIATE_TEST_CASE_P(
-    SourceStrLenGreaterThanReadaheadSize, ReadaheadSequentialFileTest,
+    SourceStrLenGreaterThanReadaheadSizeTest, ReadaheadSequentialFileTest,
     ::testing::ValuesIn(ReadaheadSequentialFileTest::GetReadaheadSizeList()));
 INSTANTIATE_TEST_CASE_P(
-    ReadExceedsReadaheadSize, ReadaheadSequentialFileTest,
+    ReadExceedsReadaheadSizeTest, ReadaheadSequentialFileTest,
     ::testing::ValuesIn(ReadaheadSequentialFileTest::GetReadaheadSizeList()));
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

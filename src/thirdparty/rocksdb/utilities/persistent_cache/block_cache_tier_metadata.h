@@ -17,7 +17,7 @@
 #include "utilities/persistent_cache/hash_table_evictable.h"
 #include "utilities/persistent_cache/lrulist.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 //
 // Block Cache Tier Metadata
@@ -120,6 +120,6 @@ class BlockCacheTierMetadata {
   BlockIndexType block_index_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif

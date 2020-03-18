@@ -9,7 +9,7 @@
 #include "rocksdb/env.h"
 #include "util/mutexlock.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifdef ROCKSDB_USING_THREAD_STATUS
 
@@ -311,4 +311,4 @@ void ThreadStatusUpdater::IncreaseThreadOperationProperty(int /*i*/,
                                                           uint64_t /*delta*/) {}
 
 #endif  // ROCKSDB_USING_THREAD_STATUS
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

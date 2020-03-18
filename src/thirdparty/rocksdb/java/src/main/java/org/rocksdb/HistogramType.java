@@ -169,30 +169,12 @@ public enum HistogramType {
   }
 
   /**
-   * Returns the byte value of the enumerations value
-   *
-   * @return byte representation
+   * @deprecated
+   * Exposes internal value of native enum mappings. This method will be marked private in the
+   * next major release.
    */
+  @Deprecated
   public byte getValue() {
     return value;
-  }
-
-  /**
-   * Get Histogram type by byte value.
-   *
-   * @param value byte representation of HistogramType.
-   *
-   * @return {@link org.rocksdb.HistogramType} instance.
-   * @throws java.lang.IllegalArgumentException if an invalid
-   *     value is provided.
-   */
-  public static HistogramType getHistogramType(final byte value) {
-    for (final HistogramType histogramType : HistogramType.values()) {
-      if (histogramType.getValue() == value) {
-        return histogramType;
-      }
-    }
-    throw new IllegalArgumentException(
-        "Illegal value provided for HistogramType.");
   }
 }

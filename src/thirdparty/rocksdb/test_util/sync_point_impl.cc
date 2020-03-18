@@ -6,7 +6,7 @@
 #include "test_util/sync_point_impl.h"
 
 #ifndef NDEBUG
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 void TestKillRandom(std::string kill_point, int odds,
                     const std::string& srcfile, int srcline) {
@@ -125,5 +125,5 @@ void SyncPoint::Data::Process(const std::string& point, void* cb_arg) {
   cleared_points_.insert(point);
   cv_.notify_all();
 }
-}  // namespace ROCKSDB_NAMESPACE
+} // rocksdb
 #endif

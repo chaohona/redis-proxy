@@ -12,7 +12,7 @@
 
 #include "rocksdb/db.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class SnapshotList;
 
@@ -148,14 +148,6 @@ class SnapshotList {
     }
   }
 
-  int64_t GetOldestSnapshotSequence() const {
-    if (empty()) {
-      return 0;
-    } else {
-      return oldest()->GetSequenceNumber();
-    }
-  }
-
   uint64_t count() const { return count_; }
 
  private:
@@ -164,4 +156,4 @@ class SnapshotList {
   uint64_t count_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

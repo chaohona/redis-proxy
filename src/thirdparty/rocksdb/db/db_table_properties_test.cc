@@ -19,7 +19,7 @@
 
 #ifndef ROCKSDB_LITE
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // A helper function that ensures the table properties returned in
 // `GetPropertiesOfAllTablesTest` is correct.
@@ -325,12 +325,12 @@ TEST_F(DBTablePropertiesTest, DeletionTriggeredCompactionMarking) {
 
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

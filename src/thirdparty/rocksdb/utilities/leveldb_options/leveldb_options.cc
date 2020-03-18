@@ -15,7 +15,7 @@
 #include "rocksdb/options.h"
 #include "rocksdb/table.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 LevelDBOptions::LevelDBOptions()
     : comparator(BytewiseComparator()),
@@ -53,4 +53,4 @@ Options ConvertOptions(const LevelDBOptions& leveldb_options) {
   return options;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -14,7 +14,7 @@
 #include "rocksdb/db.h"
 #include "rocksdb/status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Iterator;
 class TransactionDB;
@@ -535,6 +535,6 @@ class Transaction {
   friend class TransactionTest_TwoPhaseLogRollingTest2_Test;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

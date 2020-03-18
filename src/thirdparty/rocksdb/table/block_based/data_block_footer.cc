@@ -11,7 +11,7 @@
 
 #include "rocksdb/table.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 const int kDataBlockIndexTypeBitShift = 31;
 
@@ -56,4 +56,4 @@ void UnPackIndexTypeAndNumRestarts(
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

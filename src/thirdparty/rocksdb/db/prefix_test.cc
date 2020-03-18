@@ -53,10 +53,9 @@ DEFINE_int32(value_size, 40, "");
 DEFINE_bool(enable_print, false, "Print options generated to console.");
 
 // Path to the database on file system
-const std::string kDbName =
-    ROCKSDB_NAMESPACE::test::PerThreadDBPath("prefix_test");
+const std::string kDbName = rocksdb::test::PerThreadDBPath("prefix_test");
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 struct TestKey {
   uint64_t prefix;
@@ -872,7 +871,7 @@ TEST_F(PrefixTest, PrefixSeekModePrev3) {
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // end namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

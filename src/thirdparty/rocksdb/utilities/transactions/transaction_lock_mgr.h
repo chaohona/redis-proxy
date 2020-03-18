@@ -20,7 +20,7 @@
 #include "util/thread_local.h"
 #include "utilities/transactions/pessimistic_transaction.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class ColumnFamilyHandle;
 struct LockInfo;
@@ -154,5 +154,5 @@ class TransactionLockMgr {
                             const autovector<TransactionID>& wait_ids);
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  //  namespace rocksdb
 #endif  // ROCKSDB_LITE

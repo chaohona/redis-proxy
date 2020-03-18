@@ -1,5 +1,6 @@
 #include "gr_loadevent.h"
 #include "redismgr.h"
+#include "proxy.h"
 
 GR_LoadRdbEvent::GR_LoadRdbEvent(int iFD)
 {
@@ -281,6 +282,27 @@ int GR_LoadAofEvent::ProcessMsg()
             }
             this->GetReply(REDIS_RSP_OK, pIdenty);
             this->StartNext();// 没有缓存请求，直接释放请求的内存
+            continue;
+        }
+        if (IS_TIMEFLAG(this->m_ReadMsg.m_Info))
+        {
+            GR_Config *pConfig = &GR_Proxy::Instance()->m_Config;
+            if (pConfig->m_aofInfo.lUnixTime > 0)
+            {
+                // 如果已经播放到时间点则停止播放
+                long lTime = 0;
+                lTime = CharToInt(this->m_ReadMsg.m_Info.szKeyStart, this->m_ReadMsg.m_Info.iKeyLen, iRet);
+                if (iRet != GR_OK)
+                {
+                    GR_LOGE("convert time to long failed, time:%s", this->m_ReadMsg.m_Info.szKeyStart);
+                    return GR_ERROR;
+                }
+                if (lTime/1000 > pConfig->m_aofInfo.lUnixTime)
+                {
+                    GR_LOGI("all the aof data loaded to redis, time:%ld", lTime);
+                    return GR_AOF_END;
+                }
+            }
             continue;
         }
 

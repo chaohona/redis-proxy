@@ -8,7 +8,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <array>
-#include <deque>
 
 #include "rocksdb/filter_policy.h"
 
@@ -21,7 +20,7 @@
 #include "util/coding.h"
 #include "util/hash.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 
@@ -42,7 +41,7 @@ class FastLocalBloomBitsBuilder : public BuiltinFilterBitsBuilder {
 
   virtual void AddKey(const Slice& key) override {
     uint64_t hash = GetSliceHash64(key);
-    if (hash_entries_.empty() || hash != hash_entries_.back()) {
+    if (hash_entries_.size() == 0 || hash != hash_entries_.back()) {
       hash_entries_.push_back(hash);
     }
   }
@@ -72,7 +71,7 @@ class FastLocalBloomBitsBuilder : public BuiltinFilterBitsBuilder {
 
     const char* const_data = data;
     buf->reset(const_data);
-    assert(hash_entries_.empty());
+    hash_entries_.clear();
 
     return Slice(data, len_with_metadata);
   }
@@ -92,13 +91,8 @@ class FastLocalBloomBitsBuilder : public BuiltinFilterBitsBuilder {
     return num_cache_lines * 64 + /*metadata*/ 5;
   }
 
-  double EstimatedFpRate(size_t keys, size_t bytes) override {
-    return FastLocalBloomImpl::EstimatedFpRate(keys, bytes - /*metadata*/ 5,
-                                               num_probes_, /*hash bits*/ 64);
-  }
-
  private:
-  void AddAllEntries(char* data, uint32_t len) {
+  void AddAllEntries(char* data, uint32_t len) const {
     // Simple version without prefetching:
     //
     // for (auto h : hash_entries_) {
@@ -117,8 +111,7 @@ class FastLocalBloomBitsBuilder : public BuiltinFilterBitsBuilder {
     // Prime the buffer
     size_t i = 0;
     for (; i <= kBufferMask && i < num_entries; ++i) {
-      uint64_t h = hash_entries_.front();
-      hash_entries_.pop_front();
+      uint64_t h = hash_entries_[i];
       FastLocalBloomImpl::PrepareHash(Lower32of64(h), len, data,
                                       /*out*/ &byte_offsets[i]);
       hashes[i] = Upper32of64(h);
@@ -132,8 +125,7 @@ class FastLocalBloomBitsBuilder : public BuiltinFilterBitsBuilder {
       FastLocalBloomImpl::AddHashPrepared(hash_ref, num_probes_,
                                           data + byte_offset_ref);
       // And buffer
-      uint64_t h = hash_entries_.front();
-      hash_entries_.pop_front();
+      uint64_t h = hash_entries_[i];
       FastLocalBloomImpl::PrepareHash(Lower32of64(h), len, data,
                                       /*out*/ &byte_offset_ref);
       hash_ref = Upper32of64(h);
@@ -148,9 +140,7 @@ class FastLocalBloomBitsBuilder : public BuiltinFilterBitsBuilder {
 
   int millibits_per_key_;
   int num_probes_;
-  // A deque avoids unnecessary copying of already-saved values
-  // and has near-minimal peak memory use.
-  std::deque<uint64_t> hash_entries_;
+  std::vector<uint64_t> hash_entries_;
 };
 
 // See description in FastLocalBloomImpl
@@ -199,7 +189,7 @@ using LegacyBloomImpl = LegacyLocalityBloomImpl</*ExtraRotates*/ false>;
 
 class LegacyBloomBitsBuilder : public BuiltinFilterBitsBuilder {
  public:
-  explicit LegacyBloomBitsBuilder(const int bits_per_key, Logger* info_log);
+  explicit LegacyBloomBitsBuilder(const int bits_per_key);
 
   // No Copy allowed
   LegacyBloomBitsBuilder(const LegacyBloomBitsBuilder&) = delete;
@@ -219,16 +209,10 @@ class LegacyBloomBitsBuilder : public BuiltinFilterBitsBuilder {
     return CalculateSpace(num_entry, &dont_care1, &dont_care2);
   }
 
-  double EstimatedFpRate(size_t keys, size_t bytes) override {
-    return LegacyBloomImpl::EstimatedFpRate(keys, bytes - /*metadata*/ 5,
-                                            num_probes_);
-  }
-
  private:
   int bits_per_key_;
   int num_probes_;
   std::vector<uint32_t> hash_entries_;
-  Logger* info_log_;
 
   // Get totalbits that optimized for cpu cache line
   uint32_t GetTotalBitsForLocality(uint32_t total_bits);
@@ -245,11 +229,9 @@ class LegacyBloomBitsBuilder : public BuiltinFilterBitsBuilder {
   void AddHash(uint32_t h, char* data, uint32_t num_lines, uint32_t total_bits);
 };
 
-LegacyBloomBitsBuilder::LegacyBloomBitsBuilder(const int bits_per_key,
-                                               Logger* info_log)
+LegacyBloomBitsBuilder::LegacyBloomBitsBuilder(const int bits_per_key)
     : bits_per_key_(bits_per_key),
-      num_probes_(LegacyNoLocalityBloomImpl::ChooseNumProbes(bits_per_key_)),
-      info_log_(info_log) {
+      num_probes_(LegacyNoLocalityBloomImpl::ChooseNumProbes(bits_per_key_)) {
   assert(bits_per_key_);
 }
 
@@ -264,38 +246,13 @@ void LegacyBloomBitsBuilder::AddKey(const Slice& key) {
 
 Slice LegacyBloomBitsBuilder::Finish(std::unique_ptr<const char[]>* buf) {
   uint32_t total_bits, num_lines;
-  size_t num_entries = hash_entries_.size();
-  char* data =
-      ReserveSpace(static_cast<int>(num_entries), &total_bits, &num_lines);
+  char* data = ReserveSpace(static_cast<int>(hash_entries_.size()), &total_bits,
+                            &num_lines);
   assert(data);
 
   if (total_bits != 0 && num_lines != 0) {
     for (auto h : hash_entries_) {
       AddHash(h, data, num_lines, total_bits);
-    }
-
-    // Check for excessive entries for 32-bit hash function
-    if (num_entries >= /* minimum of 3 million */ 3000000U) {
-      // More specifically, we can detect that the 32-bit hash function
-      // is causing significant increase in FP rate by comparing current
-      // estimated FP rate to what we would get with a normal number of
-      // keys at same memory ratio.
-      double est_fp_rate = LegacyBloomImpl::EstimatedFpRate(
-          num_entries, total_bits / 8, num_probes_);
-      double vs_fp_rate = LegacyBloomImpl::EstimatedFpRate(
-          1U << 16, (1U << 16) * bits_per_key_ / 8, num_probes_);
-
-      if (est_fp_rate >= 1.50 * vs_fp_rate) {
-        // For more details, see
-        // https://github.com/facebook/rocksdb/wiki/RocksDB-Bloom-Filter
-        ROCKS_LOG_WARN(
-            info_log_,
-            "Using legacy SST/BBT Bloom filter with excessive key count "
-            "(%.1fM @ %dbpk), causing estimated %.1fx higher filter FP rate. "
-            "Consider using new Bloom with format_version>=5, smaller SST "
-            "file size, or partitioned filters.",
-            num_entries / 1000000.0, bits_per_key_, est_fp_rate / vs_fp_rate);
-      }
     }
   }
   // See BloomFilterPolicy::GetFilterBitsReader for metadata
@@ -457,7 +414,7 @@ const std::vector<BloomFilterPolicy::Mode> BloomFilterPolicy::kAllUserModes = {
 };
 
 BloomFilterPolicy::BloomFilterPolicy(double bits_per_key, Mode mode)
-    : mode_(mode), warned_(false) {
+    : mode_(mode) {
   // Sanitize bits_per_key
   if (bits_per_key < 1.0) {
     bits_per_key = 1.0;
@@ -486,7 +443,8 @@ void BloomFilterPolicy::CreateFilter(const Slice* keys, int n,
                                      std::string* dst) const {
   // We should ideally only be using this deprecated interface for
   // appropriately constructed BloomFilterPolicy
-  assert(mode_ == kDeprecatedBlock);
+  // FIXME disabled because of bug in C interface; see issue #6129
+  //assert(mode_ == kDeprecatedBlock);
 
   // Compute bloom filter size (in both bits and bytes)
   uint32_t bits = static_cast<uint32_t>(n * whole_bits_per_key_);
@@ -565,26 +523,7 @@ FilterBitsBuilder* BloomFilterPolicy::GetBuilderWithContext(
       case kFastLocalBloom:
         return new FastLocalBloomBitsBuilder(millibits_per_key_);
       case kLegacyBloom:
-        if (whole_bits_per_key_ >= 14 && context.info_log &&
-            !warned_.load(std::memory_order_relaxed)) {
-          warned_ = true;
-          const char* adjective;
-          if (whole_bits_per_key_ >= 20) {
-            adjective = "Dramatic";
-          } else {
-            adjective = "Significant";
-          }
-          // For more details, see
-          // https://github.com/facebook/rocksdb/wiki/RocksDB-Bloom-Filter
-          ROCKS_LOG_WARN(
-              context.info_log,
-              "Using legacy Bloom filter with high (%d) bits/key. "
-              "%s filter space and/or accuracy improvement is available "
-              "with format_version>=5.",
-              whole_bits_per_key_, adjective);
-        }
-        return new LegacyBloomBitsBuilder(whole_bits_per_key_,
-                                          context.info_log);
+        return new LegacyBloomBitsBuilder(whole_bits_per_key_);
     }
   }
   assert(false);
@@ -756,4 +695,4 @@ FilterBuildingContext::FilterBuildingContext(
 
 FilterPolicy::~FilterPolicy() { }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -17,7 +17,7 @@
 
 #ifndef ROCKSDB_LITE
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 struct HashTableTest : public testing::Test {
   ~HashTableTest() override { map_.Clear(&HashTableTest::ClearNode); }
@@ -151,7 +151,7 @@ TEST_F(EvictableHashTableTest, TestEvict) {
   }
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif
 
 int main(int argc, char** argv) {

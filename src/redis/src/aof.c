@@ -287,6 +287,63 @@ int startAppendOnly(void) {
     return C_OK;
 }
 
+/******gredis*******/
+int startSkipAppendOnly(void) {
+    char cwd[MAXPATHLEN]; /* Current working dir path for error messages. */
+    int newfd;
+
+    // if server.aof_filename exists, rename it
+    char tmpfile[256];
+    snprintf(tmpfile,256,"%s.old", server.aof_filename);
+    if (access(server.aof_filename, F_OK) == 0) {
+        if (rename(server.aof_filename, tmpfile) == -1) {
+            char *cwdp = getcwd(cwd,MAXPATHLEN);
+            serverLog(LL_WARNING,
+                "Error moving aof file %s on the final "
+                "destination %s (in server root dir %s): %s",
+                tmpfile,
+                server.aof_filename,
+                cwdp ? cwdp : "unknown",
+                strerror(errno));
+            unlink(tmpfile);
+            return C_ERR;
+        }
+    }
+
+    newfd = open(server.aof_filename,O_WRONLY|O_APPEND|O_CREAT,0644);
+    serverAssert(server.aof_state == AOF_OFF);
+    if (newfd == -1) {
+        char *cwdp = getcwd(cwd,MAXPATHLEN);
+
+        serverLog(LL_WARNING,
+            "Redis needs to enable the AOF but can't open the "
+            "append only file %s (in server root dir %s): %s",
+            server.aof_filename,
+            cwdp ? cwdp : "unknown",
+            strerror(errno));
+        return C_ERR;
+    }
+    if (server.rdb_child_pid != -1) {
+        server.aof_rewrite_scheduled = 1;
+        serverLog(LL_WARNING,"AOF was enabled but there is already a child process saving an RDB file on disk. An AOF background was scheduled to start when possible.");
+    } else {
+        /* If there is a pending AOF rewrite, we need to switch it off and
+         * start a new one: the old one cannot be reused because it is not
+         * accumulating the AOF buffer. */
+        if (server.aof_child_pid != -1) {
+            serverLog(LL_WARNING,"AOF was enabled but there is already an AOF rewriting in background. Stopping background AOF and starting a rewrite now.");
+            killAppendOnlyChild();
+        }
+    }
+    /* We correctly switched on AOF, now wait for the rewrite to be complete
+     * in order to append data on disk. */
+    server.aof_state = AOF_ON;
+    server.aof_last_fsync = server.unixtime;
+    server.aof_fd = newfd;
+    return C_OK;
+}
+/******gredis******/
+
 /* This is a wrapper to the write syscall in order to retry on short writes
  * or if the syscall gets interrupted. It could look strange that we retry
  * on short writes given that we are writing to a block device: normally if
@@ -626,6 +683,33 @@ void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int a
          * for the replication itself. */
         buf = catAppendOnlyGenericCommand(buf,argc,argv);
     }
+
+    /********gredis********/
+    if (server.aof_time_flag == AOF_TIME_FLAG_ON)
+    {
+        // set time flag every second
+        // *2\r\n$8\r\ntimeflag\r\n$9\r\n1583896391\r\n
+        static int skip_aof_num = 0;
+        static long long last_ms = 0;
+        skip_aof_num += 1;
+        if (skip_aof_num >= server.aof_tf_skip_num)
+        {
+            long long ll_now_ms = mstime();
+            if (ll_now_ms - last_ms > 1000)
+            {
+                skip_aof_num = 0;
+                last_ms = ll_now_ms;
+                static char second[64];
+
+                snprintf(second,sizeof(second),"%lld",ll_now_ms);
+                buf = sdscatprintf(buf,"*2\r\n$8\r\ntimeflag\r\n$%lu\r\n%s\r\n",
+                    (unsigned long)strlen(second),second);
+            }
+
+        }
+    }
+    /********gredis********/
+
 
     /* Append to the AOF buffer. This will be flushed on disk just before
      * of re-entering the event loop, so before the client will get a

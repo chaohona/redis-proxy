@@ -16,7 +16,7 @@
 #include "port/port.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // LRU cache implementation. This class is not thread-safe.
 
@@ -336,4 +336,4 @@ class LRUCache
   int num_shards_ = 0;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

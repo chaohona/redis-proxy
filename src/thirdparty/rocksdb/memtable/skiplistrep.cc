@@ -8,7 +8,7 @@
 #include "memtable/inlineskiplist.h"
 #include "rocksdb/memtablerep.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace {
 class SkipListRep : public MemTableRep {
   InlineSkipList<const MemTableRep::KeyComparator&> skip_list_;
@@ -277,4 +277,4 @@ MemTableRep* SkipListFactory::CreateMemTableRep(
   return new SkipListRep(compare, allocator, transform, lookahead_);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb

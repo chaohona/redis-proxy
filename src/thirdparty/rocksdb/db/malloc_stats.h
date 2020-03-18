@@ -13,9 +13,7 @@
 
 #include <string>
 
-#include "rocksdb/rocksdb_namespace.h"
-
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 void DumpMallocStats(std::string*);
 

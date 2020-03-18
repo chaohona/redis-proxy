@@ -12,7 +12,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/options.h"
 
-using namespace ROCKSDB_NAMESPACE;
+using namespace rocksdb;
 std::string kDBPath = "/tmp/rocksdb_compact_files_example";
 struct CompactionTask;
 

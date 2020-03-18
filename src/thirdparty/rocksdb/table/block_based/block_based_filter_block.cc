@@ -17,7 +17,7 @@
 #include "util/coding.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 
@@ -49,7 +49,7 @@ void AppendItem(std::string* props, const std::string& key,
 
 template <class TKey>
 void AppendItem(std::string* props, const TKey& key, const std::string& value) {
-  std::string key_str = ROCKSDB_NAMESPACE::ToString(key);
+  std::string key_str = rocksdb::ToString(key);
   AppendItem(props, key_str, value);
 }
 }  // namespace
@@ -327,7 +327,7 @@ std::string BlockBasedFilterBlockReader::ToString() const {
   result.reserve(1024);
 
   std::string s_bo("Block offset"), s_hd("Hex dump"), s_fb("# filter blocks");
-  AppendItem(&result, s_fb, ROCKSDB_NAMESPACE::ToString(num));
+  AppendItem(&result, s_fb, rocksdb::ToString(num));
   AppendItem(&result, s_bo, s_hd);
 
   for (size_t index = 0; index < num; index++) {
@@ -335,8 +335,7 @@ std::string BlockBasedFilterBlockReader::ToString() const {
     uint32_t limit = DecodeFixed32(offset + index * 4 + 4);
 
     if (start != limit) {
-      result.append(" filter block # " +
-                    ROCKSDB_NAMESPACE::ToString(index + 1) + "\n");
+      result.append(" filter block # " + rocksdb::ToString(index + 1) + "\n");
       Slice filter = Slice(data + start, limit - start);
       AppendItem(&result, start, filter.ToString(true));
     }
@@ -344,4 +343,4 @@ std::string BlockBasedFilterBlockReader::ToString() const {
   return result;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -23,7 +23,7 @@
 #include "rocksdb/write_batch.h"
 #include "rocksdb/write_batch_base.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class ColumnFamilyHandle;
 class Comparator;
@@ -125,17 +125,9 @@ class WriteBatchWithIndex : public WriteBatchBase {
   Status SingleDelete(const Slice& key) override;
 
   using WriteBatchBase::DeleteRange;
-  Status DeleteRange(ColumnFamilyHandle* /* column_family */,
-                     const Slice& /* begin_key */,
-                     const Slice& /* end_key */) override {
-    return Status::NotSupported(
-        "DeleteRange unsupported in WriteBatchWithIndex");
-  }
-  Status DeleteRange(const Slice& /* begin_key */,
-                     const Slice& /* end_key */) override {
-    return Status::NotSupported(
-        "DeleteRange unsupported in WriteBatchWithIndex");
-  }
+  Status DeleteRange(ColumnFamilyHandle* column_family, const Slice& begin_key,
+                     const Slice& end_key) override;
+  Status DeleteRange(const Slice& begin_key, const Slice& end_key) override;
 
   using WriteBatchBase::PutLogData;
   Status PutLogData(const Slice& blob) override;
@@ -273,6 +265,6 @@ class WriteBatchWithIndex : public WriteBatchBase {
   std::unique_ptr<Rep> rep;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // !ROCKSDB_LITE

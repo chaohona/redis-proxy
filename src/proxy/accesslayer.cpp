@@ -363,6 +363,11 @@ int GR_AccessEvent::ProcessMsg(int &iMsgNum)
         iParseRet = this->m_ReadMsg.ParseRsp();
         if (iParseRet != GR_OK)
         {
+            if (iParseRet == GR_START_NULL)
+            {
+                GR_LOGI("client send nullptr to proxy, fd %d, addr %s:%d", this->m_iFD, this->m_szAddr, this->m_uiPort);
+                continue;
+            }
             ASSERT(false);
             GR_LOGE("parse client msg failed, fd %d, addr %s:%d", this->m_iFD, this->m_szAddr, this->m_uiPort);
             return GR_ERROR;
@@ -462,30 +467,28 @@ int GR_AccessEvent::ProcessMsg(int &iMsgNum)
                 }
                 break;
             }
-            case PROXY_ROUTE_TINY:
-            {
-                // 处理tiny命令
-                // 如果传入clear命令，则将后端redis的数据都清除
-                if (IS_RESET(m_ReadMsg.m_Info))
-                {
-                    // 将命令替换为 flushdb
-                    pIdenty->iBroadcast = 1;
-                    pSendData = GR_MsgProcess::Instance()->FlushdbCmd();
-                }
-                break;
-            }
+        }
+
+        // 如果传入_RESET_命令，则将后端redis的数据都清除
+        pIdenty->iBroadcast = 0;
+        if (IS_RESET(m_ReadMsg.m_Info))
+        {
+            // 将命令替换为 flushdb
+            pIdenty->iBroadcast = 1;
+            pSendData = GR_MsgProcess::Instance()->FlushdbCmd();
         }
 
         // 将消息发送给后端redis
         //iRet = GR_REDISMSG_INSTANCE()->TransferMsgToRedis(this, pIdenty);
         //GR_ROUTE(this->m_pRoute, pRedisEvent, pIdenty, this->m_ReadCache.m_pData, this->m_ReadMsg, iRet);
+        pIdenty->pReqData = pSendData;
         if (pIdenty->iBroadcast == 0) // 不是广播消息
         {
             pRedisEvent = this->m_pRoute->Route(pIdenty, pSendData, this->m_ReadMsg, iRet);
             if (pRedisEvent == nullptr || pRedisEvent->m_iFD <= 0)
             {
                 // TODO 先放缓冲池中，等redis连接上之后发送给redis
-                GR_LOGE("transfer message get redis failed");
+                GR_LOGD("transfer message get redis failed");
                 iRet = REDIS_RSP_DISCONNECT;
             }
             else
@@ -498,6 +501,7 @@ int GR_AccessEvent::ProcessMsg(int &iMsgNum)
             iRet = this->m_pRoute->Broadcast(this, pIdenty, pSendData);
         }
 
+        // 广播的消息目前只支持简单的广播，只会返回GR_OK
         if (GR_OK != iRet)
         {
             // TODO 和后端redis连接有问题的处理
@@ -505,7 +509,6 @@ int GR_AccessEvent::ProcessMsg(int &iMsgNum)
             if (iRet == GR_FULL)
             {
                 GR_LOGE("redis is busy %s:%d", this->m_szAddr, this->m_uiPort);
-                //GR_Proxy::Instance()->m_AccessMgr.AddPendingEvent(this);
                 this->m_pRoute->m_pAccessMgr->AddPendingEvent(this);
                 return iRet;
             }
@@ -523,6 +526,7 @@ int GR_AccessEvent::ProcessMsg(int &iMsgNum)
     return GR_OK;
 }
 
+// 目前广播消息不会出现Pending情况，此处不需要考虑广播消息的处理情况
 int GR_AccessEvent::ProcPendingMsg(bool &bFinish)
 {
     bFinish = false;
@@ -537,14 +541,20 @@ int GR_AccessEvent::ProcPendingMsg(bool &bFinish)
         GR_LOGE("ProcPendingMsg, should not happend %s:%d", this->m_szAddr, this->m_uiPort);
         return GR_ERROR;
     }
-    int iRet = GR_RedisMgr::Instance()->TransferMsgToRedis(this, pIdenty);
-    if (GR_OK != iRet)
+
+    int iRet = GR_OK;
+    GR_RedisEvent *pRedisEvent = nullptr;
+    pRedisEvent = this->m_pRoute->Route(pIdenty, pIdenty->pReqData, this->m_ReadMsg, iRet);
+    if (pRedisEvent == nullptr || pRedisEvent->m_iFD <= 0)
     {
-        if (iRet == GR_FULL)
-        {
-            return GR_OK;
-        }
-        return iRet;
+        GR_LOGD("transfer message get redis failed");
+        this->GetReply(REDIS_RSP_DISCONNECT, pIdenty);
+        this->StartNext();
+        iRet = GR_OK;
+    }
+    else
+    {
+        iRet = pRedisEvent->SendMsg(pIdenty->pReqData, pIdenty);
     }
     int iNum = 0;
     // 将剩余消息处理完

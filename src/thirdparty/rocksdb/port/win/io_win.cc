@@ -14,7 +14,7 @@
 #include "util/aligned_buffer.h"
 #include "util/coding.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace port {
 
 /*
@@ -1066,4 +1066,4 @@ WinFileLock::~WinFileLock() {
 }
 
 }
-}  // namespace ROCKSDB_NAMESPACE
+}

@@ -18,7 +18,8 @@
 
 #include <windows.h>
 
-namespace ROCKSDB_NAMESPACE {
+
+namespace rocksdb {
 namespace port {
 
 std::string GetWindowsErrSz(DWORD err);
@@ -453,4 +454,4 @@ class WinFileLock : public FileLock {
   HANDLE hFile_;
 };
 }
-}  // namespace ROCKSDB_NAMESPACE
+}

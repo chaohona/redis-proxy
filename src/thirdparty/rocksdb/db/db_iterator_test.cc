@@ -18,7 +18,7 @@
 #include "rocksdb/perf_context.h"
 #include "table/block_based/flush_block_policy.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // A dumb ReadCallback which saying every key is committed.
 class DummyReadCallback : public ReadCallback {
@@ -109,7 +109,7 @@ TEST_P(DBIteratorTest, NonBlockingIteration) {
   do {
     ReadOptions non_blocking_opts, regular_opts;
     Options options = CurrentOptions();
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     non_blocking_opts.read_tier = kBlockCacheTier;
     CreateAndReopenWithCF({"pikachu"}, options);
     // write one kv to the database.
@@ -535,7 +535,7 @@ TEST_P(DBIteratorTest, IterReseek) {
   Options options = CurrentOptions(options_override);
   options.max_sequential_skip_in_iterations = 3;
   options.create_if_missing = true;
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   DestroyAndReopen(options);
   CreateAndReopenWithCF({"pikachu"}, options);
 
@@ -804,50 +804,6 @@ TEST_P(DBIteratorTest, IteratorPinsRef) {
   } while (ChangeCompactOptions());
 }
 
-TEST_P(DBIteratorTest, IteratorDeleteAfterCfDelete) {
-  CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
-
-  Put(1, "foo", "delete-cf-then-delete-iter");
-  Put(1, "hello", "value2");
-
-  ColumnFamilyHandle* cf = handles_[1];
-  ReadOptions ro;
-
-  auto* iter = db_->NewIterator(ro, cf);
-  iter->SeekToFirst();
-  ASSERT_EQ(IterStatus(iter), "foo->delete-cf-then-delete-iter");
-
-  // delete CF handle
-  db_->DestroyColumnFamilyHandle(cf);
-  handles_.erase(std::begin(handles_) + 1);
-
-  // delete Iterator after CF handle is deleted
-  iter->Next();
-  ASSERT_EQ(IterStatus(iter), "hello->value2");
-  delete iter;
-}
-
-TEST_P(DBIteratorTest, IteratorDeleteAfterCfDrop) {
-  CreateAndReopenWithCF({"pikachu"}, CurrentOptions());
-
-  Put(1, "foo", "drop-cf-then-delete-iter");
-
-  ReadOptions ro;
-  ColumnFamilyHandle* cf = handles_[1];
-
-  auto* iter = db_->NewIterator(ro, cf);
-  iter->SeekToFirst();
-  ASSERT_EQ(IterStatus(iter), "foo->drop-cf-then-delete-iter");
-
-  // drop and delete CF
-  db_->DropColumnFamily(cf);
-  db_->DestroyColumnFamilyHandle(cf);
-  handles_.erase(std::begin(handles_) + 1);
-
-  // delete Iterator after CF handle is dropped
-  delete iter;
-}
-
 // SetOptions not defined in ROCKSDB LITE
 #ifndef ROCKSDB_LITE
 TEST_P(DBIteratorTest, DBIteratorBoundTest) {
@@ -1026,7 +982,7 @@ TEST_P(DBIteratorTest, DBIteratorBoundMultiSeek) {
   Options options = CurrentOptions();
   options.env = env_;
   options.create_if_missing = true;
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   options.prefix_extractor = nullptr;
   DestroyAndReopen(options);
   ASSERT_OK(Put("a", "0"));
@@ -1081,10 +1037,10 @@ TEST_P(DBIteratorTest, DBIteratorBoundOptimizationTest) {
   for (auto format_version : {2, 3, 4}) {
     int upper_bound_hits = 0;
     Options options = CurrentOptions();
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+    rocksdb::SyncPoint::GetInstance()->SetCallBack(
         "BlockBasedTableIterator:out_of_bound",
         [&upper_bound_hits](void*) { upper_bound_hits++; });
-    ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
+    rocksdb::SyncPoint::GetInstance()->EnableProcessing();
     options.env = env_;
     options.create_if_missing = true;
     options.prefix_extractor = nullptr;
@@ -1132,7 +1088,7 @@ TEST_P(DBIteratorTest, IndexWithFirstKey) {
     options.create_if_missing = true;
     options.prefix_extractor = nullptr;
     options.merge_operator = MergeOperators::CreateStringAppendOperator();
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     Statistics* stats = options.statistics.get();
     BlockBasedTableOptions table_options;
     table_options.index_type =
@@ -1223,7 +1179,7 @@ TEST_P(DBIteratorTest, IndexWithFirstKeyGet) {
   options.create_if_missing = true;
   options.prefix_extractor = nullptr;
   options.merge_operator = MergeOperators::CreateStringAppendOperator();
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   Statistics* stats = options.statistics.get();
   BlockBasedTableOptions table_options;
   table_options.index_type =
@@ -1341,19 +1297,19 @@ class DBIteratorTestForPinnedData : public DBIteratorTest {
 
       // Insert data to true_data map and to DB
       true_data[k] = v;
-      if (rnd.PercentTrue(merge_percentage)) {
+      if (rnd.OneIn(static_cast<int>(100.0 / merge_percentage))) {
         ASSERT_OK(db_->Merge(WriteOptions(), k, v));
       } else {
         ASSERT_OK(Put(k, v));
       }
 
       // Pick random keys to be used to test Seek()
-      if (rnd.PercentTrue(seeks_percentage)) {
+      if (rnd.OneIn(static_cast<int>(100.0 / seeks_percentage))) {
         random_keys.push_back(k);
       }
 
       // Delete some random keys
-      if (rnd.PercentTrue(delete_percentage)) {
+      if (rnd.OneIn(static_cast<int>(100.0 / delete_percentage))) {
         deleted_keys.push_back(k);
         true_data.erase(k);
         ASSERT_OK(Delete(k));
@@ -1873,7 +1829,7 @@ TEST_P(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
   DestroyAndReopen(options);
 
   const int kNumKeys = 500;
-  // Small number of merge operands to make sure that DBIter::Prev() don't
+  // Small number of merge operands to make sure that DBIter::Prev() dont
   // fall back to Seek()
   const int kNumMergeOperands = 3;
   // Use value size that will make sure that every block contain 1 key
@@ -1908,10 +1864,10 @@ TEST_P(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
   ASSERT_OK(Flush());
 
   // Separate values and merge operands in different file so that we
-  // make sure that we don't merge them while flushing but actually
+  // make sure that we dont merge them while flushing but actually
   // merge them in the read path
   for (int i = 0; i < kNumKeys; i++) {
-    if (rnd.PercentTrue(kNoMergeOpPercentage)) {
+    if (rnd.OneIn(static_cast<int>(100.0 / kNoMergeOpPercentage))) {
       // Dont give merge operations for some keys
       continue;
     }
@@ -1927,7 +1883,7 @@ TEST_P(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
   ASSERT_OK(Flush());
 
   for (int i = 0; i < kNumKeys; i++) {
-    if (rnd.PercentTrue(kDeletePercentage)) {
+    if (rnd.OneIn(static_cast<int>(100.0 / kDeletePercentage))) {
       gen_key = Key(i);
 
       ASSERT_OK(Delete(gen_key));
@@ -2012,7 +1968,7 @@ TEST_P(DBIteratorTest, IterPrevKeyCrossingBlocksRandomized) {
 
 TEST_P(DBIteratorTest, IteratorWithLocalStatistics) {
   Options options = CurrentOptions();
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   DestroyAndReopen(options);
 
   Random rnd(301);
@@ -2110,7 +2066,7 @@ TEST_P(DBIteratorTest, ReadAhead) {
   options.env = env_;
   options.disable_auto_compactions = true;
   options.write_buffer_size = 4 << 20;
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   BlockBasedTableOptions table_options;
   table_options.block_size = 1024;
   table_options.no_block_cache = true;
@@ -2188,7 +2144,7 @@ TEST_P(DBIteratorTest, DBIteratorSkipRecentDuplicatesTest) {
   options.max_sequential_skip_in_iterations = 3;
   options.prefix_extractor = nullptr;
   options.write_buffer_size = 1 << 27;  // big enough to avoid flush
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   DestroyAndReopen(options);
 
   // Insert.
@@ -2480,7 +2436,7 @@ TEST_P(DBIteratorTest, UpperBoundWithPrevReseek) {
 
 TEST_P(DBIteratorTest, SkipStatistics) {
   Options options = CurrentOptions();
-  options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+  options.statistics = rocksdb::CreateDBStatistics();
   DestroyAndReopen(options);
 
   int skip_count = 0;
@@ -2989,10 +2945,10 @@ TEST_F(DBIteratorWithReadCallbackTest, ReadCallback) {
   delete iter;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

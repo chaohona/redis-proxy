@@ -13,7 +13,7 @@
 #include "rocksdb/env.h"
 #include "test_util/testharness.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Normalizes trivial differences across Envs such that these test cases can
 // run on all Envs.
@@ -347,7 +347,7 @@ TEST_P(EnvMoreTestWithParam, GetChildren) {
   ASSERT_EQ(0U, children.size());
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

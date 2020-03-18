@@ -12,7 +12,7 @@
 
 #include "db/compaction/compaction_picker.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class FIFOCompactionPicker : public CompactionPicker {
  public:
   FIFOCompactionPicker(const ImmutableCFOptions& ioptions,
@@ -49,5 +49,5 @@ class FIFOCompactionPicker : public CompactionPicker {
                                  VersionStorageInfo* version,
                                  LogBuffer* log_buffer);
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

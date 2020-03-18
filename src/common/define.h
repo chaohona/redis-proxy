@@ -76,7 +76,10 @@ enum GR_PROXY_STATUS{
 #define GR_NOREDIS      -4
 #define GR_EXCEPTION    -5
 #define GR_FULL         -10
+#define GR_START_NULL   -11
+
 #define GR_RDB_END          -1024
+#define GR_AOF_END          -1025
 
 enum{
     REDIS_RSP_OK,

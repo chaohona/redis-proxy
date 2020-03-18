@@ -20,7 +20,7 @@
 #include "rocksdb/iterator.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Arena;
 
@@ -45,26 +45,26 @@ class ArenaWrappedDBIter : public Iterator {
   // Set the internal iterator wrapped inside the DB Iterator. Usually it is
   // a merging iterator.
   virtual void SetIterUnderDBIter(InternalIterator* iter) {
-    db_iter_->SetIter(iter);
+    static_cast<DBIter*>(db_iter_)->SetIter(iter);
   }
 
-  bool Valid() const override { return db_iter_->Valid(); }
-  void SeekToFirst() override { db_iter_->SeekToFirst(); }
-  void SeekToLast() override { db_iter_->SeekToLast(); }
-  void Seek(const Slice& target) override { db_iter_->Seek(target); }
-  void SeekForPrev(const Slice& target) override {
+  virtual bool Valid() const override { return db_iter_->Valid(); }
+  virtual void SeekToFirst() override { db_iter_->SeekToFirst(); }
+  virtual void SeekToLast() override { db_iter_->SeekToLast(); }
+  virtual void Seek(const Slice& target) override { db_iter_->Seek(target); }
+  virtual void SeekForPrev(const Slice& target) override {
     db_iter_->SeekForPrev(target);
   }
-  void Next() override { db_iter_->Next(); }
-  void Prev() override { db_iter_->Prev(); }
-  Slice key() const override { return db_iter_->key(); }
-  Slice value() const override { return db_iter_->value(); }
-  Status status() const override { return db_iter_->status(); }
+  virtual void Next() override { db_iter_->Next(); }
+  virtual void Prev() override { db_iter_->Prev(); }
+  virtual Slice key() const override { return db_iter_->key(); }
+  virtual Slice value() const override { return db_iter_->value(); }
+  virtual Status status() const override { return db_iter_->status(); }
   bool IsBlob() const { return db_iter_->IsBlob(); }
 
-  Status GetProperty(std::string prop_name, std::string* prop) override;
+  virtual Status GetProperty(std::string prop_name, std::string* prop) override;
 
-  Status Refresh() override;
+  virtual Status Refresh() override;
 
   void Init(Env* env, const ReadOptions& read_options,
             const ImmutableCFOptions& cf_options,
@@ -109,4 +109,4 @@ extern ArenaWrappedDBIter* NewArenaWrappedDbIterator(
     ReadCallback* read_callback, DBImpl* db_impl = nullptr,
     ColumnFamilyData* cfd = nullptr, bool allow_blob = false,
     bool allow_refresh = true);
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

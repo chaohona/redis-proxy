@@ -20,15 +20,15 @@
 #include "table/iterator_wrapper.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // This file declares the factory functions of DBIter, in its original form
 // or a wrapped form with class ArenaWrappedDBIter, which is defined here.
 // Class DBIter, which is declared and implemented inside db_iter.cc, is
-// an iterator that converts internal keys (yielded by an InternalIterator)
+// a iterator that converts internal keys (yielded by an InternalIterator)
 // that were live at the specified sequence number into appropriate user
 // keys.
-// Each internal key consists of a user key, a sequence number, and a value
+// Each internal key is consist of a user key, a sequence number, and a value
 // type. DBIter deals with multiple key versions, tombstones, merge operands,
 // etc, and exposes an Iterator.
 // For example, DBIter may wrap following InternalIterator:
@@ -133,12 +133,14 @@ class DBIter final : public Iterator {
     local_stats_.BumpGlobalStatistics(statistics_);
     iter_.DeleteIter(arena_mode_);
   }
-  void SetIter(InternalIterator* iter) {
+  virtual void SetIter(InternalIterator* iter) {
     assert(iter_.iter() == nullptr);
     iter_.Set(iter);
     iter_.iter()->SetPinnedItersMgr(&pinned_iters_mgr_);
   }
-  ReadRangeDelAggregator* GetRangeDelAggregator() { return &range_del_agg_; }
+  virtual ReadRangeDelAggregator* GetRangeDelAggregator() {
+    return &range_del_agg_;
+  }
 
   bool Valid() const override { return valid_; }
   Slice key() const override {
@@ -182,7 +184,7 @@ class DBIter final : public Iterator {
   void SeekForPrev(const Slice& target) final override;
   void SeekToFirst() final override;
   void SeekToLast() final override;
-  Env* env() const { return env_; }
+  Env* env() { return env_; }
   void set_sequence(uint64_t s) {
     sequence_ = s;
     if (read_callback_) {
@@ -200,10 +202,10 @@ class DBIter final : public Iterator {
   bool ReverseToBackward();
   // Set saved_key_ to the seek key to target, with proper sequence number set.
   // It might get adjusted if the seek key is smaller than iterator lower bound.
-  void SetSavedKeyToSeekTarget(const Slice& target);
+  void SetSavedKeyToSeekTarget(const Slice& /*target*/);
   // Set saved_key_ to the seek key to target, with proper sequence number set.
   // It might get adjusted if the seek key is larger than iterator upper bound.
-  void SetSavedKeyToSeekForPrevTarget(const Slice& target);
+  void SetSavedKeyToSeekForPrevTarget(const Slice& /*target*/);
   bool FindValueForCurrentKey();
   bool FindValueForCurrentKeyUsingSeek();
   bool FindUserKeyBeforeSavedKey();
@@ -219,7 +221,7 @@ class DBIter final : public Iterator {
 
   // If prefix is not null, we need to set the iterator to invalid if no more
   // entry can be found within the prefix.
-  void PrevInternal(const Slice* prefix);
+  void PrevInternal(const Slice* /*prefix*/);
   bool TooManyInternalKeysSkipped(bool increment = true);
   bool IsVisible(SequenceNumber sequence);
 
@@ -253,11 +255,6 @@ class DBIter final : public Iterator {
       local_stats_.skip_count_--;
     }
     num_internal_keys_skipped_ = 0;
-  }
-
-  bool expect_total_order_inner_iter() {
-    assert(expect_total_order_inner_iter_ || prefix_extractor_ != nullptr);
-    return expect_total_order_inner_iter_;
   }
 
   const SliceTransform* prefix_extractor_;
@@ -305,9 +302,7 @@ class DBIter final : public Iterator {
   // Means that we will pin all data blocks we read as long the Iterator
   // is not deleted, will be true if ReadOptions::pin_data is true
   const bool pin_thru_lifetime_;
-  // Expect the inner iterator to maintain a total order.
-  // prefix_extractor_ must be non-NULL if the value is false.
-  const bool expect_total_order_inner_iter_;
+  const bool total_order_seek_;
   bool allow_blob_;
   bool is_blob_;
   bool arena_mode_;
@@ -328,7 +323,6 @@ class DBIter final : public Iterator {
   // if this value > 0 iterator will return internal keys
   SequenceNumber start_seqnum_;
 };
-
 // Return a new iterator that converts internal keys (yielded by
 // "*internal_iter") that were live at the specified `sequence` number
 // into appropriate user keys.
@@ -341,4 +335,4 @@ extern Iterator* NewDBIterator(
     ReadCallback* read_callback, DBImpl* db_impl = nullptr,
     ColumnFamilyData* cfd = nullptr, bool allow_blob = false);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

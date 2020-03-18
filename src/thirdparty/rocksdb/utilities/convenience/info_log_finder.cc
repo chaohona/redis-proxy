@@ -11,7 +11,7 @@
 #include "file/filename.h"
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 Status GetInfoLogList(DB* db, std::vector<std::string>* info_log_list) {
   if (!db) {
@@ -22,4 +22,4 @@ Status GetInfoLogList(DB* db, std::vector<std::string>* info_log_list) {
   return GetInfoLogFiles(options.env, options.db_log_dir, db->GetName(),
                          &parent_path, info_log_list);
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -10,17 +10,15 @@
 #pragma once
 #include <atomic>
 #include <string>
-#include "db/version_edit.h"
 #include "port/port.h"
 #include "rocksdb/env.h"
-#include "rocksdb/file_checksum.h"
-#include "rocksdb/file_system.h"
 #include "rocksdb/listener.h"
 #include "rocksdb/rate_limiter.h"
 #include "test_util/sync_point.h"
 #include "util/aligned_buffer.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
+
 class Statistics;
 
 // WritableFileWriter is a wrapper on top of Env::WritableFile. It provides
@@ -49,9 +47,8 @@ class WritableFileWriter {
 #endif  // ROCKSDB_LITE
 
   bool ShouldNotifyListeners() const { return !listeners_.empty(); }
-  void CalculateFileChecksum(const Slice& data);
 
-  std::unique_ptr<FSWritableFile> writable_file_;
+  std::unique_ptr<WritableFile> writable_file_;
   std::string file_name_;
   Env* env_;
   AlignedBuffer buf_;
@@ -71,17 +68,13 @@ class WritableFileWriter {
   RateLimiter* rate_limiter_;
   Statistics* stats_;
   std::vector<std::shared_ptr<EventListener>> listeners_;
-  FileChecksumFunc* checksum_func_;
-  std::string file_checksum_ = kUnknownFileChecksum;
-  bool is_first_checksum_ = true;
 
  public:
   WritableFileWriter(
-      std::unique_ptr<FSWritableFile>&& file, const std::string& _file_name,
-      const FileOptions& options, Env* env = nullptr,
+      std::unique_ptr<WritableFile>&& file, const std::string& _file_name,
+      const EnvOptions& options, Env* env = nullptr,
       Statistics* stats = nullptr,
-      const std::vector<std::shared_ptr<EventListener>>& listeners = {},
-      FileChecksumFunc* checksum_func = nullptr)
+      const std::vector<std::shared_ptr<EventListener>>& listeners = {})
       : writable_file_(std::move(file)),
         file_name_(_file_name),
         env_(env),
@@ -96,8 +89,7 @@ class WritableFileWriter {
         bytes_per_sync_(options.bytes_per_sync),
         rate_limiter_(options.rate_limiter),
         stats_(stats),
-        listeners_(),
-        checksum_func_(checksum_func) {
+        listeners_() {
     TEST_SYNC_POINT_CALLBACK("WritableFileWriter::WritableFileWriter:0",
                              reinterpret_cast<void*>(max_buffer_size_));
     buf_.Alignment(writable_file_->GetRequiredBufferAlignment());
@@ -143,19 +135,11 @@ class WritableFileWriter {
     return writable_file_->InvalidateCache(offset, length);
   }
 
-  FSWritableFile* writable_file() const { return writable_file_.get(); }
+  WritableFile* writable_file() const { return writable_file_.get(); }
 
   bool use_direct_io() { return writable_file_->use_direct_io(); }
 
   bool TEST_BufferIsEmpty() { return buf_.CurrentSize() == 0; }
-
-  void TEST_SetFileChecksumFunc(FileChecksumFunc* checksum_func) {
-    checksum_func_ = checksum_func;
-  }
-
-  const std::string& GetFileChecksum() const { return file_checksum_; }
-
-  const char* GetFileChecksumFuncName() const;
 
  private:
   // Used when os buffering is OFF and we are writing
@@ -168,4 +152,4 @@ class WritableFileWriter {
   Status RangeSync(uint64_t offset, uint64_t nbytes);
   Status SyncInternal(bool use_fsync);
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

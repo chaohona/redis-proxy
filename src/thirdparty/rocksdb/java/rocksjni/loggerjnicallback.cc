@@ -4,7 +4,7 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the callback "bridge" between Java and C++ for
-// ROCKSDB_NAMESPACE::Logger.
+// rocksdb::Logger.
 
 #include "include/org_rocksdb_Logger.h"
 
@@ -13,7 +13,7 @@
 #include "rocksjni/loggerjnicallback.h"
 #include "rocksjni/portal.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 LoggerJniCallback::LoggerJniCallback(JNIEnv* env, jobject jlogger)
     : JniCallback(env, jlogger) {
@@ -107,22 +107,22 @@ void LoggerJniCallback::Logv(const InfoLogLevel log_level, const char* format,
     // determine InfoLogLevel java enum instance
     jobject jlog_level;
     switch (log_level) {
-      case ROCKSDB_NAMESPACE::InfoLogLevel::DEBUG_LEVEL:
+      case rocksdb::InfoLogLevel::DEBUG_LEVEL:
         jlog_level = m_jdebug_level;
         break;
-      case ROCKSDB_NAMESPACE::InfoLogLevel::INFO_LEVEL:
+      case rocksdb::InfoLogLevel::INFO_LEVEL:
         jlog_level = m_jinfo_level;
         break;
-      case ROCKSDB_NAMESPACE::InfoLogLevel::WARN_LEVEL:
+      case rocksdb::InfoLogLevel::WARN_LEVEL:
         jlog_level = m_jwarn_level;
         break;
-      case ROCKSDB_NAMESPACE::InfoLogLevel::ERROR_LEVEL:
+      case rocksdb::InfoLogLevel::ERROR_LEVEL:
         jlog_level = m_jerror_level;
         break;
-      case ROCKSDB_NAMESPACE::InfoLogLevel::FATAL_LEVEL:
+      case rocksdb::InfoLogLevel::FATAL_LEVEL:
         jlog_level = m_jfatal_level;
         break;
-      case ROCKSDB_NAMESPACE::InfoLogLevel::HEADER_LEVEL:
+      case rocksdb::InfoLogLevel::HEADER_LEVEL:
         jlog_level = m_jheader_level;
         break;
       default:
@@ -218,7 +218,7 @@ LoggerJniCallback::~LoggerJniCallback() {
   releaseJniEnv(attached_thread);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 /*
  * Class:     org_rocksdb_Logger
@@ -227,11 +227,11 @@ LoggerJniCallback::~LoggerJniCallback() {
  */
 jlong Java_org_rocksdb_Logger_createNewLoggerOptions(JNIEnv* env, jobject jobj,
                                                      jlong joptions) {
-  auto* sptr_logger = new std::shared_ptr<ROCKSDB_NAMESPACE::LoggerJniCallback>(
-      new ROCKSDB_NAMESPACE::LoggerJniCallback(env, jobj));
+  auto* sptr_logger = new std::shared_ptr<rocksdb::LoggerJniCallback>(
+      new rocksdb::LoggerJniCallback(env, jobj));
 
   // set log level
-  auto* options = reinterpret_cast<ROCKSDB_NAMESPACE::Options*>(joptions);
+  auto* options = reinterpret_cast<rocksdb::Options*>(joptions);
   sptr_logger->get()->SetInfoLogLevel(options->info_log_level);
 
   return reinterpret_cast<jlong>(sptr_logger);
@@ -245,12 +245,11 @@ jlong Java_org_rocksdb_Logger_createNewLoggerOptions(JNIEnv* env, jobject jobj,
 jlong Java_org_rocksdb_Logger_createNewLoggerDbOptions(JNIEnv* env,
                                                        jobject jobj,
                                                        jlong jdb_options) {
-  auto* sptr_logger = new std::shared_ptr<ROCKSDB_NAMESPACE::LoggerJniCallback>(
-      new ROCKSDB_NAMESPACE::LoggerJniCallback(env, jobj));
+  auto* sptr_logger = new std::shared_ptr<rocksdb::LoggerJniCallback>(
+      new rocksdb::LoggerJniCallback(env, jobj));
 
   // set log level
-  auto* db_options =
-      reinterpret_cast<ROCKSDB_NAMESPACE::DBOptions*>(jdb_options);
+  auto* db_options = reinterpret_cast<rocksdb::DBOptions*>(jdb_options);
   sptr_logger->get()->SetInfoLogLevel(db_options->info_log_level);
 
   return reinterpret_cast<jlong>(sptr_logger);
@@ -264,10 +263,9 @@ jlong Java_org_rocksdb_Logger_createNewLoggerDbOptions(JNIEnv* env,
 void Java_org_rocksdb_Logger_setInfoLogLevel(JNIEnv* /*env*/, jobject /*jobj*/,
                                              jlong jhandle, jbyte jlog_level) {
   auto* handle =
-      reinterpret_cast<std::shared_ptr<ROCKSDB_NAMESPACE::LoggerJniCallback>*>(
-          jhandle);
+      reinterpret_cast<std::shared_ptr<rocksdb::LoggerJniCallback>*>(jhandle);
   handle->get()->SetInfoLogLevel(
-      static_cast<ROCKSDB_NAMESPACE::InfoLogLevel>(jlog_level));
+      static_cast<rocksdb::InfoLogLevel>(jlog_level));
 }
 
 /*
@@ -278,8 +276,7 @@ void Java_org_rocksdb_Logger_setInfoLogLevel(JNIEnv* /*env*/, jobject /*jobj*/,
 jbyte Java_org_rocksdb_Logger_infoLogLevel(JNIEnv* /*env*/, jobject /*jobj*/,
                                            jlong jhandle) {
   auto* handle =
-      reinterpret_cast<std::shared_ptr<ROCKSDB_NAMESPACE::LoggerJniCallback>*>(
-          jhandle);
+      reinterpret_cast<std::shared_ptr<rocksdb::LoggerJniCallback>*>(jhandle);
   return static_cast<jbyte>(handle->get()->GetInfoLogLevel());
 }
 
@@ -291,7 +288,6 @@ jbyte Java_org_rocksdb_Logger_infoLogLevel(JNIEnv* /*env*/, jobject /*jobj*/,
 void Java_org_rocksdb_Logger_disposeInternal(JNIEnv* /*env*/, jobject /*jobj*/,
                                              jlong jhandle) {
   auto* handle =
-      reinterpret_cast<std::shared_ptr<ROCKSDB_NAMESPACE::LoggerJniCallback>*>(
-          jhandle);
+      reinterpret_cast<std::shared_ptr<rocksdb::LoggerJniCallback>*>(jhandle);
   delete handle;  // delete std::shared_ptr
 }

@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class MergeOperators {
  public:
@@ -52,4 +52,4 @@ class MergeOperators {
   }
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

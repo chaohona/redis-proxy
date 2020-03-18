@@ -11,7 +11,7 @@
 #include <set>
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class DBOptionChangeMigrationTests
     : public DBTestBase,
@@ -416,10 +416,10 @@ TEST_F(DBOptionChangeMigrationTest, CompactedSrcToUniversal) {
 }
 
 #endif  // ROCKSDB_LITE
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

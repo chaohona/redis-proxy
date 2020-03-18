@@ -14,7 +14,7 @@
 #include "rocksdb/types.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class GetContext;
 
 struct KeyContext {
@@ -94,6 +94,8 @@ class MultiGetContext {
       : num_keys_(num_keys),
         value_mask_(0),
         lookup_key_ptr_(reinterpret_cast<LookupKey*>(lookup_key_stack_buf)) {
+    int index = 0;
+
     if (num_keys > MAX_LOOKUP_KEYS_ON_STACK) {
       lookup_key_heap_buf.reset(new char[sizeof(LookupKey) * num_keys]);
       lookup_key_ptr_ = reinterpret_cast<LookupKey*>(
@@ -103,10 +105,11 @@ class MultiGetContext {
     for (size_t iter = 0; iter != num_keys_; ++iter) {
       // autovector may not be contiguous storage, so make a copy
       sorted_keys_[iter] = (*sorted_keys)[begin + iter];
-      sorted_keys_[iter]->lkey = new (&lookup_key_ptr_[iter])
+      sorted_keys_[iter]->lkey = new (&lookup_key_ptr_[index])
           LookupKey(*sorted_keys_[iter]->key, snapshot);
       sorted_keys_[iter]->ukey = sorted_keys_[iter]->lkey->user_key();
       sorted_keys_[iter]->ikey = sorted_keys_[iter]->lkey->internal_key();
+      index++;
     }
   }
 
@@ -256,4 +259,4 @@ class MultiGetContext {
   Range GetMultiGetRange() { return Range(this, num_keys_); }
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

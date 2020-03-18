@@ -14,7 +14,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/concurrent_task_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class TaskLimiterToken;
 
@@ -64,4 +64,4 @@ class TaskLimiterToken {
   void operator=(const TaskLimiterToken&) = delete;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

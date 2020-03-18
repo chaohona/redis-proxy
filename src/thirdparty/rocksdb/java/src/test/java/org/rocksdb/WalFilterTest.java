@@ -16,14 +16,13 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.rocksdb.util.ByteUtil.bytes;
 import static org.rocksdb.util.TestUtil.*;
 
 public class WalFilterTest {
 
   @ClassRule
-  public static final RocksNativeLibraryResource ROCKS_NATIVE_LIBRARY_RESOURCE =
-      new RocksNativeLibraryResource();
+  public static final RocksMemoryResource rocksMemoryResource =
+      new RocksMemoryResource();
 
   @Rule
   public TemporaryFolder dbFolder = new TemporaryFolder();
@@ -33,23 +32,23 @@ public class WalFilterTest {
     // Create 3 batches with two keys each
     final byte[][][] batchKeys = {
         new byte[][] {
-            bytes("key1"),
-            bytes("key2")
+            u("key1"),
+            u("key2")
         },
         new byte[][] {
-            bytes("key3"),
-            bytes("key4")
+            u("key3"),
+            u("key4")
         },
         new byte[][] {
-            bytes("key5"),
-            bytes("key6")
+            u("key5"),
+            u("key6")
         }
 
     };
 
     final List<ColumnFamilyDescriptor> cfDescriptors = Arrays.asList(
         new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY),
-        new ColumnFamilyDescriptor(bytes("pikachu"))
+        new ColumnFamilyDescriptor(u("pikachu"))
     );
     final List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
 

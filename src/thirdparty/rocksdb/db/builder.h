@@ -22,7 +22,7 @@
 #include "rocksdb/types.h"
 #include "table/scoped_arena_iterator.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 struct Options;
 struct FileMetaData;
@@ -62,9 +62,8 @@ TableBuilder* NewTableBuilder(
 // @param column_family_name Name of the column family that is also identified
 //    by column_family_id, or empty string if unknown.
 extern Status BuildTable(
-    const std::string& dbname, Env* env, FileSystem* fs,
-    const ImmutableCFOptions& options,
-    const MutableCFOptions& mutable_cf_options, const FileOptions& file_options,
+    const std::string& dbname, Env* env, const ImmutableCFOptions& options,
+    const MutableCFOptions& mutable_cf_options, const EnvOptions& env_options,
     TableCache* table_cache, InternalIterator* iter,
     std::vector<std::unique_ptr<FragmentedRangeTombstoneIterator>>
         range_del_iters,
@@ -85,4 +84,4 @@ extern Status BuildTable(
     Env::WriteLifeTimeHint write_hint = Env::WLTH_NOT_SET,
     const uint64_t file_creation_time = 0);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

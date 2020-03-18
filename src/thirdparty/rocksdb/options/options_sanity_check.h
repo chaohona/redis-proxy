@@ -8,10 +8,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "rocksdb/rocksdb_namespace.h"
-
 #ifndef ROCKSDB_LITE
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // This enum defines the RocksDB options sanity level.
 enum OptionsSanityCheckLevel : unsigned char {
   // Performs no sanity check at all.
@@ -45,6 +43,6 @@ OptionsSanityCheckLevel CFOptionSanityCheckLevel(
 OptionsSanityCheckLevel BBTOptionSanityCheckLevel(
     const std::string& options_name);
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // !ROCKSDB_LITE

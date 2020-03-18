@@ -4,7 +4,7 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the callback "bridge" between Java and C++ for
-// ROCKSDB_NAMESPACE::WriteBatch::Handler.
+// rocksdb::WriteBatch::Handler.
 
 #ifndef JAVA_ROCKSJNI_WRITEBATCHHANDLERJNICALLBACK_H_
 #define JAVA_ROCKSJNI_WRITEBATCHHANDLERJNICALLBACK_H_
@@ -15,7 +15,7 @@
 #include "rocksjni/jnicallback.h"
 #include "rocksdb/write_batch.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 /**
  * This class acts as a bridge between C++
  * and Java. The methods in this class will be
@@ -71,19 +71,14 @@ class WriteBatchHandlerJniCallback : public JniCallback, public WriteBatch::Hand
     jmethodID m_jMarkCommitMethodId;
     jmethodID m_jContinueMethodId;
     /**
-     * @return A pointer to a ROCKSDB_NAMESPACE::Status or nullptr if an
-     * unexpected exception occurred
+     * @return A pointer to a rocksdb::Status or nullptr if an unexpected exception occurred
      */
-    std::unique_ptr<ROCKSDB_NAMESPACE::Status> kv_op(
-        const Slice& key, const Slice& value,
-        std::function<void(jbyteArray, jbyteArray)> kvFn);
+    std::unique_ptr<rocksdb::Status> kv_op(const Slice& key, const Slice& value, std::function<void(jbyteArray, jbyteArray)> kvFn);
     /**
-     * @return A pointer to a ROCKSDB_NAMESPACE::Status or nullptr if an
-     * unexpected exception occurred
+     * @return A pointer to a rocksdb::Status or nullptr if an unexpected exception occurred
      */
-    std::unique_ptr<ROCKSDB_NAMESPACE::Status> k_op(
-        const Slice& key, std::function<void(jbyteArray)> kFn);
+    std::unique_ptr<rocksdb::Status> k_op(const Slice& key, std::function<void(jbyteArray)> kFn);
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // JAVA_ROCKSJNI_WRITEBATCHHANDLERJNICALLBACK_H_

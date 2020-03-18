@@ -14,31 +14,31 @@
 #include "file/writable_file_writer.h"
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Utility function to copy a file up to a specified length
-Status CopyFile(FileSystem* fs, const std::string& source,
+Status CopyFile(Env* env, const std::string& source,
                 const std::string& destination, uint64_t size, bool use_fsync) {
-  const FileOptions soptions;
+  const EnvOptions soptions;
   Status s;
   std::unique_ptr<SequentialFileReader> src_reader;
   std::unique_ptr<WritableFileWriter> dest_writer;
 
   {
-    std::unique_ptr<FSSequentialFile> srcfile;
-    s = fs->NewSequentialFile(source, soptions, &srcfile, nullptr);
+    std::unique_ptr<SequentialFile> srcfile;
+    s = env->NewSequentialFile(source, &srcfile, soptions);
     if (!s.ok()) {
       return s;
     }
-    std::unique_ptr<FSWritableFile> destfile;
-    s = fs->NewWritableFile(destination, soptions, &destfile, nullptr);
+    std::unique_ptr<WritableFile> destfile;
+    s = env->NewWritableFile(destination, &destfile, soptions);
     if (!s.ok()) {
       return s;
     }
 
     if (size == 0) {
       // default argument means copy everything
-      s = fs->GetFileSize(source, IOOptions(), &size, nullptr);
+      s = env->GetFileSize(source, &size);
       if (!s.ok()) {
         return s;
       }
@@ -69,14 +69,14 @@ Status CopyFile(FileSystem* fs, const std::string& source,
 }
 
 // Utility function to create a file with the provided contents
-Status CreateFile(FileSystem* fs, const std::string& destination,
+Status CreateFile(Env* env, const std::string& destination,
                   const std::string& contents, bool use_fsync) {
   const EnvOptions soptions;
   Status s;
   std::unique_ptr<WritableFileWriter> dest_writer;
 
-  std::unique_ptr<FSWritableFile> destfile;
-  s = fs->NewWritableFile(destination, soptions, &destfile, nullptr);
+  std::unique_ptr<WritableFile> destfile;
+  s = env->NewWritableFile(destination, &destfile, soptions);
   if (!s.ok()) {
     return s;
   }
@@ -121,4 +121,4 @@ bool IsWalDirSameAsDBPath(const ImmutableDBOptions* db_options) {
   return same;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -10,7 +10,7 @@
 #include "db/write_batch_internal.h"
 #include "file/sequence_file_reader.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 TransactionLogIteratorImpl::TransactionLogIteratorImpl(
     const std::string& dir, const ImmutableDBOptions* options,
@@ -42,23 +42,22 @@ TransactionLogIteratorImpl::TransactionLogIteratorImpl(
 Status TransactionLogIteratorImpl::OpenLogFile(
     const LogFile* log_file,
     std::unique_ptr<SequentialFileReader>* file_reader) {
-  FileSystem* fs = options_->fs.get();
-  std::unique_ptr<FSSequentialFile> file;
+  Env* env = options_->env;
+  std::unique_ptr<SequentialFile> file;
   std::string fname;
   Status s;
-  EnvOptions optimized_env_options = fs->OptimizeForLogRead(soptions_);
+  EnvOptions optimized_env_options = env->OptimizeForLogRead(soptions_);
   if (log_file->Type() == kArchivedLogFile) {
     fname = ArchivedLogFileName(dir_, log_file->LogNumber());
-    s = fs->NewSequentialFile(fname, optimized_env_options, &file, nullptr);
+    s = env->NewSequentialFile(fname, &file, optimized_env_options);
   } else {
     fname = LogFileName(dir_, log_file->LogNumber());
-    s = fs->NewSequentialFile(fname, optimized_env_options, &file, nullptr);
+    s = env->NewSequentialFile(fname, &file, optimized_env_options);
     if (!s.ok()) {
       //  If cannot open file in DB directory.
       //  Try the archive dir, as it could have moved in the meanwhile.
       fname = ArchivedLogFileName(dir_, log_file->LogNumber());
-      s = fs->NewSequentialFile(fname, optimized_env_options,
-                                &file, nullptr);
+      s = env->NewSequentialFile(fname, &file, optimized_env_options);
     }
   }
   if (s.ok()) {
@@ -311,5 +310,5 @@ Status TransactionLogIteratorImpl::OpenLogReader(const LogFile* log_file) {
                       read_options_.verify_checksums_, log_file->LogNumber()));
   return Status::OK();
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  //  namespace rocksdb
 #endif  // ROCKSDB_LITE

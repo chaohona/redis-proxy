@@ -11,7 +11,7 @@
 #include "test_util/testutil.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class VersionBuilderTest : public testing::Test {
  public:
@@ -63,8 +63,7 @@ class VersionBuilderTest : public testing::Test {
         file_number, path_id, file_size, GetInternalKey(smallest, smallest_seq),
         GetInternalKey(largest, largest_seq), smallest_seqno, largest_seqno,
         /* marked_for_compact */ false, kInvalidBlobFileNumber,
-        kUnknownOldestAncesterTime, kUnknownFileCreationTime,
-        kUnknownFileChecksum, kUnknownFileChecksumFuncName);
+        kUnknownOldestAncesterTime, kUnknownFileCreationTime);
     f->compensated_file_size = file_size;
     f->num_entries = num_entries;
     f->num_deletions = num_deletions;
@@ -116,8 +115,7 @@ TEST_F(VersionBuilderTest, ApplyAndSaveTo) {
   version_edit.AddFile(2, 666, 0, 100U, GetInternalKey("301"),
                        GetInternalKey("350"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.DeleteFile(3, 27U);
 
   EnvOptions env_options;
@@ -153,8 +151,7 @@ TEST_F(VersionBuilderTest, ApplyAndSaveToDynamic) {
   version_edit.AddFile(3, 666, 0, 100U, GetInternalKey("301"),
                        GetInternalKey("350"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.DeleteFile(0, 1U);
   version_edit.DeleteFile(0, 88U);
 
@@ -193,8 +190,7 @@ TEST_F(VersionBuilderTest, ApplyAndSaveToDynamic2) {
   version_edit.AddFile(4, 666, 0, 100U, GetInternalKey("301"),
                        GetInternalKey("350"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.DeleteFile(0, 1U);
   version_edit.DeleteFile(0, 88U);
   version_edit.DeleteFile(4, 6U);
@@ -224,28 +220,23 @@ TEST_F(VersionBuilderTest, ApplyMultipleAndSaveTo) {
   version_edit.AddFile(2, 666, 0, 100U, GetInternalKey("301"),
                        GetInternalKey("350"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 676, 0, 100U, GetInternalKey("401"),
                        GetInternalKey("450"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 636, 0, 100U, GetInternalKey("601"),
                        GetInternalKey("650"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 616, 0, 100U, GetInternalKey("501"),
                        GetInternalKey("550"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 606, 0, 100U, GetInternalKey("701"),
                        GetInternalKey("750"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
 
   EnvOptions env_options;
 
@@ -273,43 +264,36 @@ TEST_F(VersionBuilderTest, ApplyDeleteAndSaveTo) {
   version_edit.AddFile(2, 666, 0, 100U, GetInternalKey("301"),
                        GetInternalKey("350"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 676, 0, 100U, GetInternalKey("401"),
                        GetInternalKey("450"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 636, 0, 100U, GetInternalKey("601"),
                        GetInternalKey("650"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 616, 0, 100U, GetInternalKey("501"),
                        GetInternalKey("550"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit.AddFile(2, 606, 0, 100U, GetInternalKey("701"),
                        GetInternalKey("750"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_builder.Apply(&version_edit);
 
   VersionEdit version_edit2;
   version_edit.AddFile(2, 808, 0, 100U, GetInternalKey("901"),
                        GetInternalKey("950"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_edit2.DeleteFile(2, 616);
   version_edit2.DeleteFile(2, 636);
   version_edit.AddFile(2, 806, 0, 100U, GetInternalKey("801"),
                        GetInternalKey("850"), 200, 200, false,
                        kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-                       kUnknownFileCreationTime, kUnknownFileChecksum,
-                       kUnknownFileChecksumFuncName);
+                       kUnknownFileCreationTime);
   version_builder.Apply(&version_edit2);
 
   version_builder.SaveTo(&new_vstorage);
@@ -341,7 +325,7 @@ TEST_F(VersionBuilderTest, EstimatedActiveKeys) {
             (kEntriesPerFile - 2 * kDeletionsPerFile) * kNumFiles);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -18,7 +18,7 @@
 #include "utilities/blob_db/blob_log_reader.h"
 #include "utilities/blob_db/blob_log_writer.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace blob_db {
 
 class BlobDBImpl;
@@ -27,7 +27,6 @@ class BlobFile {
   friend class BlobDBImpl;
   friend struct BlobFileComparator;
   friend struct BlobFileComparatorTTL;
-  friend class BlobIndexCompactionFilterGC;
 
  private:
   // access to parent
@@ -76,7 +75,7 @@ class BlobFile {
   // The latest sequence number when the file was closed/made immutable.
   SequenceNumber immutable_sequence_{0};
 
-  // Whether the file was marked obsolete (due to either TTL or GC).
+  // has a pass of garbage collection successfully finished on this file
   // obsolete_ still needs to do iterator/snapshot checks
   std::atomic<bool> obsolete_{false};
 
@@ -168,13 +167,13 @@ class BlobFile {
     return immutable_sequence_;
   }
 
-  // Whether the file was marked obsolete (due to either TTL or GC).
+  // if the file has gone through GC and blobs have been relocated
   bool Obsolete() const {
     assert(Immutable() || !obsolete_.load());
     return obsolete_.load();
   }
 
-  // Mark file as obsolete (due to either TTL or GC). The file is not visible to
+  // Mark file as obsolete by garbage collection. The file is not visible to
   // snapshots with sequence greater or equal to the given sequence.
   void MarkObsolete(SequenceNumber sequence);
 
@@ -241,12 +240,7 @@ class BlobFile {
   void SetFileSize(uint64_t fs) { file_size_ = fs; }
 
   void SetBlobCount(uint64_t bc) { blob_count_ = bc; }
-
-  void BlobRecordAdded(uint64_t record_size) {
-    ++blob_count_;
-    file_size_ += record_size;
-  }
 };
 }  // namespace blob_db
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // ROCKSDB_LITE

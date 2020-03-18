@@ -18,8 +18,7 @@
  */
 void Java_org_rocksdb_RocksDBExceptionTest_raiseException(JNIEnv* env,
                                                           jobject /*jobj*/) {
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(env,
-                                                   std::string("test message"));
+  rocksdb::RocksDBExceptionJni::ThrowNew(env, std::string("test message"));
 }
 
 /*
@@ -29,8 +28,8 @@ void Java_org_rocksdb_RocksDBExceptionTest_raiseException(JNIEnv* env,
  */
 void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionWithStatusCode(
     JNIEnv* env, jobject /*jobj*/) {
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(
-      env, "test message", ROCKSDB_NAMESPACE::Status::NotSupported());
+  rocksdb::RocksDBExceptionJni::ThrowNew(env, "test message",
+                                         rocksdb::Status::NotSupported());
 }
 
 /*
@@ -40,8 +39,7 @@ void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionWithStatusCode(
  */
 void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionNoMsgWithStatusCode(
     JNIEnv* env, jobject /*jobj*/) {
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(
-      env, ROCKSDB_NAMESPACE::Status::NotSupported());
+  rocksdb::RocksDBExceptionJni::ThrowNew(env, rocksdb::Status::NotSupported());
 }
 
 /*
@@ -51,10 +49,9 @@ void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionNoMsgWithStatusCode(
  */
 void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionWithStatusCodeSubCode(
     JNIEnv* env, jobject /*jobj*/) {
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(
+  rocksdb::RocksDBExceptionJni::ThrowNew(
       env, "test message",
-      ROCKSDB_NAMESPACE::Status::TimedOut(
-          ROCKSDB_NAMESPACE::Status::SubCode::kLockTimeout));
+      rocksdb::Status::TimedOut(rocksdb::Status::SubCode::kLockTimeout));
 }
 
 /*
@@ -64,9 +61,8 @@ void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionWithStatusCodeSubCode(
  */
 void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionNoMsgWithStatusCodeSubCode(
     JNIEnv* env, jobject /*jobj*/) {
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(
-      env, ROCKSDB_NAMESPACE::Status::TimedOut(
-               ROCKSDB_NAMESPACE::Status::SubCode::kLockTimeout));
+  rocksdb::RocksDBExceptionJni::ThrowNew(
+      env, rocksdb::Status::TimedOut(rocksdb::Status::SubCode::kLockTimeout));
 }
 
 /*
@@ -76,7 +72,7 @@ void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionNoMsgWithStatusCodeSubC
  */
 void Java_org_rocksdb_RocksDBExceptionTest_raiseExceptionWithStatusCodeState(
     JNIEnv* env, jobject /*jobj*/) {
-  ROCKSDB_NAMESPACE::Slice state("test state");
-  ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(
-      env, "test message", ROCKSDB_NAMESPACE::Status::NotSupported(state));
+  rocksdb::Slice state("test state");
+  rocksdb::RocksDBExceptionJni::ThrowNew(env, "test message",
+                                         rocksdb::Status::NotSupported(state));
 }

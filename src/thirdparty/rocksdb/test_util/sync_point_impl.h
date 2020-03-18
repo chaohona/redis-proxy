@@ -21,7 +21,7 @@
 #pragma once
 
 #ifndef NDEBUG
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 struct SyncPoint::Data {
   Data() : enabled_(false) {}
   // Enable proper deletion by subclasses
@@ -70,5 +70,5 @@ struct SyncPoint::Data {
   }
   void Process(const std::string& point, void* cb_arg);
 };
-}  // namespace ROCKSDB_NAMESPACE
+}
 #endif // NDEBUG

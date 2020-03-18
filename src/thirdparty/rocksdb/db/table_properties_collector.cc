@@ -9,7 +9,7 @@
 #include "util/coding.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace {
 
@@ -71,4 +71,4 @@ uint64_t GetMergeOperands(const UserCollectedProperties& props,
       props, TablePropertiesNames::kMergeOperands, property_present);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

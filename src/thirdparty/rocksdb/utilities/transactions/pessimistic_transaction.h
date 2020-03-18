@@ -28,7 +28,7 @@
 #include "utilities/transactions/transaction_base.h"
 #include "utilities/transactions/transaction_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class PessimisticTransactionDB;
 
@@ -220,6 +220,6 @@ class WriteCommittedTxn : public PessimisticTransaction {
   Status RollbackInternal() override;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

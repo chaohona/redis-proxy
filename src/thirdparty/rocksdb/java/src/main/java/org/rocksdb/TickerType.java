@@ -731,30 +731,13 @@ public enum TickerType {
     }
 
     /**
-     * Returns the byte value of the enumerations value
+     * @deprecated Exposes internal value of native enum mappings.
+     *     This method will be marked package private in the next major release.
      *
-     * @return byte representation
+     * @return the internal representation
      */
+    @Deprecated
     public byte getValue() {
         return value;
-    }
-
-    /**
-     * Get Ticker type by byte value.
-     *
-     * @param value byte representation of TickerType.
-     *
-     * @return {@link org.rocksdb.TickerType} instance.
-     * @throws java.lang.IllegalArgumentException if an invalid
-     *     value is provided.
-     */
-    public static TickerType getTickerType(final byte value) {
-        for (final TickerType tickerType : TickerType.values()) {
-            if (tickerType.getValue() == value) {
-                return tickerType;
-            }
-        }
-        throw new IllegalArgumentException(
-            "Illegal value provided for TickerType.");
     }
 }

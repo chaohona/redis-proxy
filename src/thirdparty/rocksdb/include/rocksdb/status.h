@@ -19,7 +19,7 @@
 #include <string>
 #include "rocksdb/slice.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Status {
  public:
@@ -306,7 +306,7 @@ class Status {
   // Returns the string "OK" for success.
   std::string ToString() const;
 
- protected:
+ private:
   // A nullptr state_ (which is always the case for OK) means the message
   // is empty.
   // of the following form:
@@ -383,4 +383,4 @@ inline bool Status::operator!=(const Status& rhs) const {
   return !(*this == rhs);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

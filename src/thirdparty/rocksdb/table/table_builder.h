@@ -21,7 +21,7 @@
 #include "rocksdb/table_properties.h"
 #include "trace_replay/block_cache_tracer.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Slice;
 class Status;
@@ -159,12 +159,6 @@ class TableBuilder {
 
   // Returns table properties
   virtual TableProperties GetTableProperties() const = 0;
-
-  // Return file checksum
-  virtual const std::string& GetFileChecksum() const = 0;
-
-  // Return file checksum function name
-  virtual const char* GetFileChecksumFuncName() const = 0;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

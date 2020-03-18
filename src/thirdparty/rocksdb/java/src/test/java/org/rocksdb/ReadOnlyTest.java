@@ -18,8 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ReadOnlyTest {
 
   @ClassRule
-  public static final RocksNativeLibraryResource ROCKS_NATIVE_LIBRARY_RESOURCE =
-      new RocksNativeLibraryResource();
+  public static final RocksMemoryResource rocksMemoryResource =
+      new RocksMemoryResource();
 
   @Rule
   public TemporaryFolder dbFolder = new TemporaryFolder();
@@ -194,7 +194,7 @@ public class ReadOnlyTest {
           dbFolder.getRoot().getAbsolutePath(), cfDescriptors,
           readOnlyColumnFamilyHandleList)) {
         try {
-          rDb.delete("key".getBytes());
+          rDb.remove("key".getBytes());
         } finally {
           for (final ColumnFamilyHandle columnFamilyHandle :
               readOnlyColumnFamilyHandleList) {
@@ -224,7 +224,7 @@ public class ReadOnlyTest {
           dbFolder.getRoot().getAbsolutePath(), cfDescriptors,
           readOnlyColumnFamilyHandleList)) {
         try {
-          rDb.delete(readOnlyColumnFamilyHandleList.get(0),
+          rDb.remove(readOnlyColumnFamilyHandleList.get(0),
               "key".getBytes());
         } finally {
           for (final ColumnFamilyHandle columnFamilyHandle :

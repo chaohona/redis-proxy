@@ -11,7 +11,7 @@
 
 #include "include/org_rocksdb_NativeComparatorWrapperTest_NativeStringComparatorWrapper.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class NativeComparatorWrapperTestStringComparator : public Comparator {
   const char* Name() const {
@@ -29,7 +29,7 @@ class NativeComparatorWrapperTestStringComparator : public Comparator {
 
   void FindShortSuccessor(std::string* /*key*/) const { return; }
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 /*
  * Class: org_rocksdb_NativeComparatorWrapperTest_NativeStringComparatorWrapper
@@ -38,7 +38,6 @@ class NativeComparatorWrapperTestStringComparator : public Comparator {
  */
 jlong Java_org_rocksdb_NativeComparatorWrapperTest_00024NativeStringComparatorWrapper_newStringComparator(
     JNIEnv* /*env*/, jobject /*jobj*/) {
-  auto* comparator =
-      new ROCKSDB_NAMESPACE::NativeComparatorWrapperTestStringComparator();
+  auto* comparator = new rocksdb::NativeComparatorWrapperTestStringComparator();
   return reinterpret_cast<jlong>(comparator);
 }

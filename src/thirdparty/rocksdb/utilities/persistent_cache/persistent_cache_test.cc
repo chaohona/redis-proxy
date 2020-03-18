@@ -19,7 +19,7 @@
 
 #include "utilities/persistent_cache/block_cache_tier.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 static const double kStressFactor = .125;
 
@@ -27,7 +27,7 @@ static const double kStressFactor = .125;
 static void OnOpenForRead(void* arg) {
   int* val = static_cast<int*>(arg);
   *val &= ~O_DIRECT;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "NewRandomAccessFile:O_DIRECT",
       std::bind(OnOpenForRead, std::placeholders::_1));
 }
@@ -35,7 +35,7 @@ static void OnOpenForRead(void* arg) {
 static void OnOpenForWrite(void* arg) {
   int* val = static_cast<int*>(arg);
   *val &= ~O_DIRECT;
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "NewWritableFile:O_DIRECT",
       std::bind(OnOpenForWrite, std::placeholders::_1));
 }
@@ -137,11 +137,11 @@ std::unique_ptr<PersistentTieredCache> NewTieredCache(
 PersistentCacheTierTest::PersistentCacheTierTest()
     : path_(test::PerThreadDBPath("cache_test")) {
 #ifdef OS_LINUX
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
-      "NewRandomAccessFile:O_DIRECT", OnOpenForRead);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
-      "NewWritableFile:O_DIRECT", OnOpenForWrite);
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->SetCallBack("NewRandomAccessFile:O_DIRECT",
+                                                 OnOpenForRead);
+  rocksdb::SyncPoint::GetInstance()->SetCallBack("NewWritableFile:O_DIRECT",
+                                                 OnOpenForWrite);
 #endif
 }
 
@@ -150,14 +150,14 @@ TEST_F(PersistentCacheTierTest, DISABLED_BlockCacheInsertWithFileCreateError) {
   cache_ = NewBlockCache(Env::Default(), path_,
                          /*size=*/std::numeric_limits<uint64_t>::max(),
                          /*direct_writes=*/ false);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
-      "BlockCacheTier::NewCacheFile:DeleteDir", OnDeleteDir);
+  rocksdb::SyncPoint::GetInstance()->SetCallBack( 
+    "BlockCacheTier::NewCacheFile:DeleteDir", OnDeleteDir);
 
   RunNegativeInsertTest(/*nthreads=*/ 1,
                         /*max_keys*/
                           static_cast<size_t>(10 * 1024 * kStressFactor));
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearAllCallBacks();
+  rocksdb::SyncPoint::GetInstance()->ClearAllCallBacks();
 }
 
 #if defined(TRAVIS) || defined(ROCKSDB_VALGRIND_RUN)
@@ -273,8 +273,8 @@ static void UniqueIdCallback(void* arg) {
     *result = 0;
   }
 
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->ClearTrace();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->ClearTrace();
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "GetUniqueIdFromFile:FS_IOC_GETVERSION", UniqueIdCallback);
 }
 #endif
@@ -296,11 +296,11 @@ TEST_F(PersistentCacheTierTest, FactoryTest) {
 
 PersistentCacheDBTest::PersistentCacheDBTest() : DBTestBase("/cache_test") {
 #ifdef OS_LINUX
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
+  rocksdb::SyncPoint::GetInstance()->EnableProcessing();
+  rocksdb::SyncPoint::GetInstance()->SetCallBack(
       "GetUniqueIdFromFile:FS_IOC_GETVERSION", UniqueIdCallback);
-  ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->SetCallBack(
-      "NewRandomAccessFile:O_DIRECT", OnOpenForRead);
+  rocksdb::SyncPoint::GetInstance()->SetCallBack("NewRandomAccessFile:O_DIRECT",
+                                                 OnOpenForRead);
 #endif
 }
 
@@ -319,7 +319,7 @@ void PersistentCacheDBTest::RunTest(
     Options options;
     options.write_buffer_size =
       static_cast<size_t>(64 * 1024 * kStressFactor);  // small write buffer
-    options.statistics = ROCKSDB_NAMESPACE::CreateDBStatistics();
+    options.statistics = rocksdb::CreateDBStatistics();
     options = CurrentOptions(options);
 
     // setup page cache
@@ -463,7 +463,7 @@ TEST_F(PersistentCacheDBTest, TieredCacheTest) {
 }
 #endif
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

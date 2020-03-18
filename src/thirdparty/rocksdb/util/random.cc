@@ -20,7 +20,7 @@
 #define STORAGE_DECL static
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 Random* Random::GetTLSInstance() {
   STORAGE_DECL Random* tls_instance;
@@ -35,4 +35,4 @@ Random* Random::GetTLSInstance() {
   return rv;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

@@ -12,7 +12,7 @@
 #include "rocksdb/thread_status.h"
 #include "util/stop_watch.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class InstrumentedCondVar;
 
 // A wrapper class for port::Mutex that provides additional layer
@@ -95,4 +95,4 @@ class InstrumentedCondVar {
   int stats_code_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

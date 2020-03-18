@@ -25,7 +25,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "env/composite_env_wrapper.h"
 #include "file/filename.h"
 #include "file/sequence_file_reader.h"
 #include "file/writable_file_writer.h"
@@ -41,7 +40,7 @@
 #include "util/string_util.h"
 #include "utilities/checkpoint/checkpoint_impl.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 void BackupStatistics::IncrementNumberSuccessBackup() {
   number_success_backup++;
@@ -257,7 +256,7 @@ class BackupEngineImpl : public BackupEngine {
                                        bool tmp = false,
                                        const std::string& file = "") const {
     assert(file.size() == 0 || file[0] != '/');
-    return GetPrivateDirRel() + "/" + ROCKSDB_NAMESPACE::ToString(backup_id) +
+    return GetPrivateDirRel() + "/" + rocksdb::ToString(backup_id) +
            (tmp ? ".tmp" : "") + "/" + file;
   }
   inline std::string GetSharedFileRel(const std::string& file = "",
@@ -278,8 +277,8 @@ class BackupEngineImpl : public BackupEngine {
     assert(file.size() == 0 || file[0] != '/');
     std::string file_copy = file;
     return file_copy.insert(file_copy.find_last_of('.'),
-                            "_" + ROCKSDB_NAMESPACE::ToString(checksum_value) +
-                                "_" + ROCKSDB_NAMESPACE::ToString(file_size));
+                            "_" + rocksdb::ToString(checksum_value) + "_" +
+                                rocksdb::ToString(file_size));
   }
   inline std::string GetFileFromChecksumFile(const std::string& file) const {
     assert(file.size() == 0 || file[0] != '/');
@@ -293,7 +292,7 @@ class BackupEngineImpl : public BackupEngine {
   }
   inline std::string GetBackupMetaFile(BackupID backup_id, bool tmp) const {
     return GetBackupMetaDir() + "/" + (tmp ? "." : "") +
-           ROCKSDB_NAMESPACE::ToString(backup_id) + (tmp ? ".tmp" : "");
+           rocksdb::ToString(backup_id) + (tmp ? ".tmp" : "");
   }
 
   // If size_limit == 0, there is no size limit, copy everything.
@@ -623,7 +622,7 @@ Status BackupEngineImpl::Initialize() {
     ROCKS_LOG_INFO(options_.info_log, "Detected backup %s", file.c_str());
     BackupID backup_id = 0;
     sscanf(file.c_str(), "%u", &backup_id);
-    if (backup_id == 0 || file != ROCKSDB_NAMESPACE::ToString(backup_id)) {
+    if (backup_id == 0 || file != rocksdb::ToString(backup_id)) {
       if (!read_only_) {
         // invalid file name, delete that
         auto s = backup_env_->DeleteFile(GetBackupMetaDir() + "/" + file);
@@ -1298,13 +1297,12 @@ Status BackupEngineImpl::CopyOrCreateFile(
     return s;
   }
 
-  std::unique_ptr<WritableFileWriter> dest_writer(new WritableFileWriter(
-      NewLegacyWritableFileWrapper(std::move(dst_file)), dst, dst_env_options));
+  std::unique_ptr<WritableFileWriter> dest_writer(
+      new WritableFileWriter(std::move(dst_file), dst, dst_env_options));
   std::unique_ptr<SequentialFileReader> src_reader;
   std::unique_ptr<char[]> buf;
   if (!src.empty()) {
-    src_reader.reset(new SequentialFileReader(
-        NewLegacySequentialFileWrapper(src_file), src));
+    src_reader.reset(new SequentialFileReader(std::move(src_file), src));
     buf.reset(new char[copy_file_buffer_size_]);
   }
 
@@ -1501,7 +1499,7 @@ Status BackupEngineImpl::CalculateChecksum(const std::string& src, Env* src_env,
   }
 
   std::unique_ptr<SequentialFileReader> src_reader(
-      new SequentialFileReader(NewLegacySequentialFileWrapper(src_file), src));
+      new SequentialFileReader(std::move(src_file), src));
   std::unique_ptr<char[]> buf(new char[copy_file_buffer_size_]);
   Slice data;
 
@@ -1748,8 +1746,7 @@ Status BackupEngineImpl::BackupMeta::LoadFromFile(
   }
 
   std::unique_ptr<SequentialFileReader> backup_meta_reader(
-      new SequentialFileReader(NewLegacySequentialFileWrapper(backup_meta_file),
-                               meta_filename_));
+      new SequentialFileReader(std::move(backup_meta_file), meta_filename_));
   std::unique_ptr<char[]> buf(new char[max_backup_meta_file_size_ + 1]);
   Slice data;
   s = backup_meta_reader->Read(max_backup_meta_file_size_, &data, buf.get());
@@ -1811,7 +1808,7 @@ Status BackupEngineImpl::BackupMeta::LoadFromFile(
       line.remove_prefix(checksum_prefix.size());
       checksum_value = static_cast<uint32_t>(
           strtoul(line.data(), nullptr, 10));
-      if (line != ROCKSDB_NAMESPACE::ToString(checksum_value)) {
+      if (line != rocksdb::ToString(checksum_value)) {
         return Status::Corruption("Invalid checksum value for " + filename +
                                   " in " + meta_filename_);
       }
@@ -1984,6 +1981,6 @@ Status BackupEngineReadOnly::Open(Env* env, const BackupableDBOptions& options,
   return Status::OK();
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

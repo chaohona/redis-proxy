@@ -12,7 +12,7 @@
 #include "rocksdb/compaction_filter.h"
 #include "rocksdb/slice.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class RemoveEmptyValueCompactionFilter : public CompactionFilter {
  public:
@@ -23,5 +23,5 @@ class RemoveEmptyValueCompactionFilter : public CompactionFilter {
         std::string* new_value,
         bool* value_changed) const override;
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

@@ -12,7 +12,7 @@
 #include "port/port.h"
 #include "util/random.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 #ifdef ROCKSDB_SUPPORT_THREAD_LOCAL
 __thread size_t ConcurrentArena::tls_cpuid = 0;
@@ -44,4 +44,4 @@ ConcurrentArena::Shard* ConcurrentArena::Repick() {
   return shard_and_index.first;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

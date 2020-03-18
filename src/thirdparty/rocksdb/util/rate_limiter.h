@@ -19,7 +19,7 @@
 #include "util/mutexlock.h"
 #include "util/random.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class GenericRateLimiter : public RateLimiter {
  public:
@@ -110,4 +110,4 @@ class GenericRateLimiter : public RateLimiter {
   std::chrono::microseconds tuned_time_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

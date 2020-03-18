@@ -7,7 +7,7 @@
 #include "monitoring/statistics.h"
 #include "rocksdb/env.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 // Auto-scoped.
 // Records the measure time into the corresponding histogram if statistics
 // is not nullptr. It is also saved into *elapsed if the pointer is not nullptr
@@ -115,4 +115,4 @@ class StopWatchNano {
   uint64_t start_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb

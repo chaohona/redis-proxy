@@ -16,7 +16,7 @@
 #include "test_util/testutil.h"
 #include "util/string_util.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class GenerateLevelFilesBriefTest : public testing::Test {
  public:
@@ -40,8 +40,7 @@ class GenerateLevelFilesBriefTest : public testing::Test {
         InternalKey(smallest, smallest_seq, kTypeValue),
         InternalKey(largest, largest_seq, kTypeValue), smallest_seq,
         largest_seq, /* marked_for_compact */ false, kInvalidBlobFileNumber,
-        kUnknownOldestAncesterTime, kUnknownFileCreationTime,
-        kUnknownFileChecksum, kUnknownFileChecksumFuncName);
+        kUnknownOldestAncesterTime, kUnknownFileCreationTime);
     files_.push_back(f);
   }
 
@@ -136,8 +135,7 @@ class VersionStorageInfoTest : public testing::Test {
         file_number, 0, file_size, GetInternalKey(smallest, 0),
         GetInternalKey(largest, 0), /* smallest_seq */ 0, /* largest_seq */ 0,
         /* marked_for_compact */ false, kInvalidBlobFileNumber,
-        kUnknownOldestAncesterTime, kUnknownFileCreationTime,
-        kUnknownFileChecksum, kUnknownFileChecksumFuncName);
+        kUnknownOldestAncesterTime, kUnknownFileCreationTime);
     f->compensated_file_size = file_size;
     vstorage_.AddFile(level, f);
   }
@@ -149,8 +147,7 @@ class VersionStorageInfoTest : public testing::Test {
         file_number, 0, file_size, smallest, largest, /* smallest_seq */ 0,
         /* largest_seq */ 0, /* marked_for_compact */ false,
         kInvalidBlobFileNumber, kUnknownOldestAncesterTime,
-        kUnknownFileCreationTime, kUnknownFileChecksum,
-        kUnknownFileChecksumFuncName);
+        kUnknownFileCreationTime);
     f->compensated_file_size = file_size;
     vstorage_.AddFile(level, f);
   }
@@ -613,25 +610,21 @@ class VersionSetTestBase {
 
   VersionSetTestBase()
       : env_(Env::Default()),
-        fs_(std::make_shared<LegacyFileSystemWrapper>(env_)),
         dbname_(test::PerThreadDBPath("version_set_test")),
         db_options_(),
         mutable_cf_options_(cf_options_),
         table_cache_(NewLRUCache(50000, 16)),
         write_buffer_manager_(db_options_.db_write_buffer_size),
+        versions_(new VersionSet(dbname_, &db_options_, env_options_,
+                                 table_cache_.get(), &write_buffer_manager_,
+                                 &write_controller_,
+                                 /*block_cache_tracer=*/nullptr)),
+        reactive_versions_(std::make_shared<ReactiveVersionSet>(
+            dbname_, &db_options_, env_options_, table_cache_.get(),
+            &write_buffer_manager_, &write_controller_)),
         shutting_down_(false),
         mock_table_factory_(std::make_shared<mock::MockTableFactory>()) {
     EXPECT_OK(env_->CreateDirIfMissing(dbname_));
-
-    db_options_.env = env_;
-    db_options_.fs = fs_;
-    versions_.reset(new VersionSet(dbname_, &db_options_, env_options_,
-                                   table_cache_.get(), &write_buffer_manager_,
-                                   &write_controller_,
-                                   /*block_cache_tracer=*/nullptr)),
-        reactive_versions_ = std::make_shared<ReactiveVersionSet>(
-            dbname_, &db_options_, env_options_, table_cache_.get(),
-            &write_buffer_manager_, &write_controller_);
     db_options_.db_paths.emplace_back(dbname_,
                                       std::numeric_limits<uint64_t>::max());
   }
@@ -676,8 +669,8 @@ class VersionSetTestBase {
     Status s = env_->NewWritableFile(
         manifest, &file, env_->OptimizeForManifestWrite(env_options_));
     ASSERT_OK(s);
-    std::unique_ptr<WritableFileWriter> file_writer(new WritableFileWriter(
-        NewLegacyWritableFileWrapper(std::move(file)), manifest, env_options_));
+    std::unique_ptr<WritableFileWriter> file_writer(
+        new WritableFileWriter(std::move(file), manifest, env_options_));
     {
       log_writer->reset(new log::Writer(std::move(file_writer), 0, false));
       std::string record;
@@ -716,7 +709,6 @@ class VersionSetTestBase {
   }
 
   Env* env_;
-  std::shared_ptr<FileSystem> fs_;
   const std::string dbname_;
   EnvOptions env_options_;
   ImmutableDBOptions db_options_;
@@ -1279,7 +1271,7 @@ INSTANTIATE_TEST_CASE_P(
     testing::Values(VersionSetTestBase::kColumnFamilyName1,
                     VersionSetTestBase::kColumnFamilyName2,
                     VersionSetTestBase::kColumnFamilyName3));
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

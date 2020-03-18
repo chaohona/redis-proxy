@@ -24,7 +24,7 @@
 #include "monitoring/iostats_context_imp.h"
 #include "port/sys_time.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 namespace port {
 
@@ -189,4 +189,4 @@ size_t WinLogger::GetLogFileSize() const { return log_size_; }
 
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

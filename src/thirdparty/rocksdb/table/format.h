@@ -24,7 +24,7 @@
 #include "port/port.h"  // noexcept
 #include "table/persistent_cache_options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class RandomAccessFile;
 struct ReadOptions;
@@ -341,4 +341,4 @@ inline BlockHandle::BlockHandle()
 inline BlockHandle::BlockHandle(uint64_t _offset, uint64_t _size)
     : offset_(_offset), size_(_size) {}
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

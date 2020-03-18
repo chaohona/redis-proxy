@@ -16,7 +16,7 @@
 #include <map>
 #include <mutex>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class HistogramBucketMapper {
  public:
@@ -146,4 +146,4 @@ class HistogramImpl : public Histogram {
   std::mutex mutex_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

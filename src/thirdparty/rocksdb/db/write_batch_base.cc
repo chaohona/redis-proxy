@@ -10,7 +10,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // Simple implementation of SlicePart variants of Put().  Child classes
 // can override these method with more performant solutions if they choose.
@@ -91,4 +91,4 @@ Status WriteBatchBase::Merge(const SliceParts& key, const SliceParts& value) {
   return Merge(key_slice, value_slice);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

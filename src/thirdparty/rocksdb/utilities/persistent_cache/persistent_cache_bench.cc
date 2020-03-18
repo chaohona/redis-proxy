@@ -43,7 +43,7 @@ DEFINE_string(cache_type, "block_cache",
 DEFINE_bool(benchmark, false, "Benchmark mode");
 DEFINE_int32(volatile_cache_pct, 10, "Percentage of cache in memory tier.");
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 std::unique_ptr<PersistentCacheTier> NewVolatileCache() {
   assert(FLAGS_cache_size != std::numeric_limits<uint64_t>::max());
@@ -301,7 +301,7 @@ class CacheTierBenchmark {
   mutable Stats stats_;                         // Stats
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 //
 // main
@@ -329,16 +329,16 @@ int main(int argc, char** argv) {
 
   fprintf(stderr, "%s\n", msg.str().c_str());
 
-  std::shared_ptr<ROCKSDB_NAMESPACE::PersistentCacheTier> cache;
+  std::shared_ptr<rocksdb::PersistentCacheTier> cache;
   if (FLAGS_cache_type == "block_cache") {
     fprintf(stderr, "Using block cache implementation\n");
-    cache = ROCKSDB_NAMESPACE::NewBlockCache();
+    cache = rocksdb::NewBlockCache();
   } else if (FLAGS_cache_type == "volatile") {
     fprintf(stderr, "Using volatile cache implementation\n");
-    cache = ROCKSDB_NAMESPACE::NewVolatileCache();
+    cache = rocksdb::NewVolatileCache();
   } else if (FLAGS_cache_type == "tiered") {
     fprintf(stderr, "Using tiered cache implementation\n");
-    cache = ROCKSDB_NAMESPACE::NewTieredCache();
+    cache = rocksdb::NewTieredCache();
   } else {
     fprintf(stderr, "Unknown option for cache\n");
   }
@@ -349,8 +349,8 @@ int main(int argc, char** argv) {
     abort();
   }
 
-  std::unique_ptr<ROCKSDB_NAMESPACE::CacheTierBenchmark> benchmark(
-      new ROCKSDB_NAMESPACE::CacheTierBenchmark(std::move(cache)));
+  std::unique_ptr<rocksdb::CacheTierBenchmark> benchmark(
+      new rocksdb::CacheTierBenchmark(std::move(cache)));
 
   return 0;
 }

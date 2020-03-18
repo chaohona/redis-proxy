@@ -7,21 +7,18 @@
 
 #include "rocksdb/utilities/options_util.h"
 
-#include "env/composite_env_wrapper.h"
 #include "file/filename.h"
 #include "options/options_parser.h"
 #include "rocksdb/options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 Status LoadOptionsFromFile(const std::string& file_name, Env* env,
                            DBOptions* db_options,
                            std::vector<ColumnFamilyDescriptor>* cf_descs,
                            bool ignore_unknown_options,
                            std::shared_ptr<Cache>* cache) {
   RocksDBOptionsParser parser;
-  LegacyFileSystemWrapper fs(env);
-  Status s = parser.Parse(file_name, &fs, ignore_unknown_options,
-                          0 /* file_readahead_size */);
+  Status s = parser.Parse(file_name, env, ignore_unknown_options);
   if (!s.ok()) {
     return s;
   }
@@ -103,12 +100,11 @@ Status CheckOptionsCompatibility(
   }
 
   const OptionsSanityCheckLevel kDefaultLevel = kSanityLevelLooselyCompatible;
-  LegacyFileSystemWrapper fs(env);
 
   return RocksDBOptionsParser::VerifyRocksDBOptionsFromFile(
-      db_options, cf_names, cf_opts, dbpath + "/" + options_file_name, &fs,
+      db_options, cf_names, cf_opts, dbpath + "/" + options_file_name, env,
       kDefaultLevel, ignore_unknown_options);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 #endif  // !ROCKSDB_LITE

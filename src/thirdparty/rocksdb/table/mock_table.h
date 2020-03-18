@@ -12,7 +12,6 @@
 #include <string>
 #include <utility>
 
-#include "db/version_edit.h"
 #include "port/port.h"
 #include "rocksdb/comparator.h"
 #include "rocksdb/table.h"
@@ -24,7 +23,7 @@
 #include "util/kv_map.h"
 #include "util/mutexlock.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 namespace mock {
 
 stl_wrappers::KVMap MakeMockFile(
@@ -154,18 +153,10 @@ class MockTableBuilder : public TableBuilder {
     return TableProperties();
   }
 
-  // Get file checksum
-  const std::string& GetFileChecksum() const override { return file_checksum_; }
-  // Get file checksum function name
-  const char* GetFileChecksumFuncName() const override {
-    return kUnknownFileChecksumFuncName.c_str();
-  }
-
  private:
   uint32_t id_;
   MockTableFileSystem* file_system_;
   stl_wrappers::KVMap table_;
-  std::string file_checksum_ = kUnknownFileChecksum;
 };
 
 class MockTableFactory : public TableFactory {
@@ -211,4 +202,4 @@ class MockTableFactory : public TableFactory {
 };
 
 }  // namespace mock
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

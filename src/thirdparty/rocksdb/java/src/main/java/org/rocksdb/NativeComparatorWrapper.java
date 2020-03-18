@@ -5,8 +5,6 @@
 
 package org.rocksdb;
 
-import java.nio.ByteBuffer;
-
 /**
  * A simple abstraction to allow a Java class to wrap a custom comparator
  * implemented in C++.
@@ -14,7 +12,7 @@ import java.nio.ByteBuffer;
  * The native comparator must directly extend rocksdb::Comparator.
  */
 public abstract class NativeComparatorWrapper
-    extends AbstractComparator {
+    extends AbstractComparator<Slice> {
 
   @Override
   final ComparatorType getComparatorType() {
@@ -28,26 +26,26 @@ public abstract class NativeComparatorWrapper
   }
 
   @Override
-  public final int compare(final ByteBuffer s1, final ByteBuffer s2) {
+  public final int compare(final Slice s1, final Slice s2) {
     throw new IllegalStateException("This should not be called. " +
         "Implementation is in Native code");
   }
 
   @Override
-  public final void findShortestSeparator(final ByteBuffer start, final ByteBuffer limit) {
+  public final String findShortestSeparator(final String start, final Slice limit) {
     throw new IllegalStateException("This should not be called. " +
         "Implementation is in Native code");
   }
 
   @Override
-  public final void findShortSuccessor(final ByteBuffer key) {
+  public final String findShortSuccessor(final String key) {
     throw new IllegalStateException("This should not be called. " +
         "Implementation is in Native code");
   }
 
   /**
    * We override {@link RocksCallbackObject#disposeInternal()}
-   * as disposing of a native rocksdb::Comparator extension requires
+   * as disposing of a native rocksd::Comparator extension requires
    * a slightly different approach as it is not really a RocksCallbackObject
    */
   @Override

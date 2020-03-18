@@ -45,7 +45,7 @@ DEFINE_int32(erase_percent, 10,
 
 DEFINE_bool(use_clock_cache, false, "");
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class CacheBench;
 namespace {
@@ -154,7 +154,7 @@ class CacheBench {
   }
 
   bool Run() {
-    ROCKSDB_NAMESPACE::Env* env = ROCKSDB_NAMESPACE::Env::Default();
+    rocksdb::Env* env = rocksdb::Env::Default();
 
     PrintEnv();
     SharedState shared(this);
@@ -257,7 +257,7 @@ class CacheBench {
     printf("----------------------------\n");
   }
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
   ParseCommandLineFlags(&argc, &argv, true);
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  ROCKSDB_NAMESPACE::CacheBench bench;
+  rocksdb::CacheBench bench;
   if (FLAGS_populate_cache) {
     bench.PopulateCache();
   }

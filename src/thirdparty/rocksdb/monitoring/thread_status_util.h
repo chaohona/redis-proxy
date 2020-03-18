@@ -12,7 +12,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/thread_status.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class ColumnFamilyData;
 
@@ -131,4 +131,4 @@ class AutoThreadOperationStageUpdater {
 #endif
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

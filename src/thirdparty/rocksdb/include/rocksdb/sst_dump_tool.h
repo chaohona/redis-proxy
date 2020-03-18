@@ -7,13 +7,13 @@
 
 #include "rocksdb/options.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class SSTDumpTool {
  public:
   int Run(int argc, char** argv, Options options = Options());
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ROCKSDB_LITE

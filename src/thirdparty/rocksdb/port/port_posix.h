@@ -12,9 +12,6 @@
 #pragma once
 
 #include <thread>
-
-#include "rocksdb/rocksdb_namespace.h"
-
 // size_t printf formatting named in the manner of C99 standard formatting
 // strings such as PRIu64
 // in fact, we could use that one
@@ -84,7 +81,7 @@
 #define fdatasync fsync
 #endif
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 extern const bool kDefaultToAdaptiveMutex;
 
@@ -99,7 +96,7 @@ const int64_t kMaxInt64 = std::numeric_limits<int64_t>::max();
 const int64_t kMinInt64 = std::numeric_limits<int64_t>::min();
 const size_t kMaxSizet = std::numeric_limits<size_t>::max();
 
-constexpr bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
+static const bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
 #undef PLATFORM_IS_LITTLE_ENDIAN
 
 class CondVar;
@@ -212,7 +209,5 @@ extern void Crash(const std::string& srcfile, int srcline);
 
 extern int GetMaxOpenFiles();
 
-extern const size_t kPageSize;
-
 } // namespace port
-}  // namespace ROCKSDB_NAMESPACE
+} // namespace rocksdb

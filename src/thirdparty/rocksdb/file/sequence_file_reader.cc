@@ -21,7 +21,7 @@
 #include "util/random.h"
 #include "util/rate_limiter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 Status SequentialFileReader::Read(size_t n, Slice* result, char* scratch) {
   Status s;
   if (use_direct_io()) {
@@ -36,8 +36,7 @@ Status SequentialFileReader::Read(size_t n, Slice* result, char* scratch) {
     buf.Alignment(alignment);
     buf.AllocateNewBuffer(size);
     Slice tmp;
-    s = file_->PositionedRead(aligned_offset, size, IOOptions(), &tmp,
-                              buf.BufferStart(), nullptr);
+    s = file_->PositionedRead(aligned_offset, size, &tmp, buf.BufferStart());
     if (s.ok() && offset_advance < tmp.size()) {
       buf.Size(tmp.size());
       r = buf.Read(scratch, offset_advance,
@@ -46,7 +45,7 @@ Status SequentialFileReader::Read(size_t n, Slice* result, char* scratch) {
     *result = Slice(scratch, r);
 #endif  // !ROCKSDB_LITE
   } else {
-    s = file_->Read(n, IOOptions(), result, scratch, nullptr);
+    s = file_->Read(n, result, scratch);
   }
   IOSTATS_ADD(bytes_read, result->size());
   return s;
@@ -67,9 +66,9 @@ namespace {
 // of being able to prefetch up to readahead_size bytes and then serve them
 // from memory, avoiding the entire round-trip if, for example, the data for the
 // file is actually remote.
-class ReadaheadSequentialFile : public FSSequentialFile {
+class ReadaheadSequentialFile : public SequentialFile {
  public:
-  ReadaheadSequentialFile(std::unique_ptr<FSSequentialFile>&& file,
+  ReadaheadSequentialFile(std::unique_ptr<SequentialFile>&& file,
                           size_t readahead_size)
       : file_(std::move(file)),
         alignment_(file_->GetRequiredBufferAlignment()),
@@ -85,8 +84,7 @@ class ReadaheadSequentialFile : public FSSequentialFile {
 
   ReadaheadSequentialFile& operator=(const ReadaheadSequentialFile&) = delete;
 
-  IOStatus Read(size_t n, const IOOptions& opts, Slice* result, char* scratch,
-                IODebugContext* dbg) override {
+  Status Read(size_t n, Slice* result, char* scratch) override {
     std::unique_lock<std::mutex> lk(lock_);
 
     size_t cached_len = 0;
@@ -98,14 +96,14 @@ class ReadaheadSequentialFile : public FSSequentialFile {
         (cached_len == n || buffer_.CurrentSize() < readahead_size_)) {
       // We read exactly what we needed, or we hit end of file - return.
       *result = Slice(scratch, cached_len);
-      return IOStatus::OK();
+      return Status::OK();
     }
     n -= cached_len;
 
-    IOStatus s;
+    Status s;
     // Read-ahead only make sense if we have some slack left after reading
     if (n + alignment_ >= readahead_size_) {
-      s = file_->Read(n, opts, result, scratch + cached_len, dbg);
+      s = file_->Read(n, result, scratch + cached_len);
       if (s.ok()) {
         read_offset_ += result->size();
         *result = Slice(scratch, cached_len + result->size());
@@ -114,7 +112,7 @@ class ReadaheadSequentialFile : public FSSequentialFile {
       return s;
     }
 
-    s = ReadIntoBuffer(readahead_size_, opts, dbg);
+    s = ReadIntoBuffer(readahead_size_);
     if (s.ok()) {
       // The data we need is now in cache, so we can safely read it
       size_t remaining_len;
@@ -124,9 +122,9 @@ class ReadaheadSequentialFile : public FSSequentialFile {
     return s;
   }
 
-  IOStatus Skip(uint64_t n) override {
+  Status Skip(uint64_t n) override {
     std::unique_lock<std::mutex> lk(lock_);
-    IOStatus s = IOStatus::OK();
+    Status s = Status::OK();
     // First check if we need to skip already cached data
     if (buffer_.CurrentSize() > 0) {
       // Do we need to skip beyond cached data?
@@ -151,13 +149,12 @@ class ReadaheadSequentialFile : public FSSequentialFile {
     return s;
   }
 
-  IOStatus PositionedRead(uint64_t offset, size_t n, const IOOptions& opts,
-                          Slice* result, char* scratch,
-                          IODebugContext* dbg) override {
-    return file_->PositionedRead(offset, n, opts, result, scratch, dbg);
+  Status PositionedRead(uint64_t offset, size_t n, Slice* result,
+                        char* scratch) override {
+    return file_->PositionedRead(offset, n, result, scratch);
   }
 
-  IOStatus InvalidateCache(size_t offset, size_t length) override {
+  Status InvalidateCache(size_t offset, size_t length) override {
     std::unique_lock<std::mutex> lk(lock_);
     buffer_.Clear();
     return file_->InvalidateCache(offset, length);
@@ -187,14 +184,13 @@ class ReadaheadSequentialFile : public FSSequentialFile {
   // Reads into buffer_ the next n bytes from file_.
   // Can actually read less if EOF was reached.
   // Returns the status of the read operastion on the file.
-  IOStatus ReadIntoBuffer(size_t n, const IOOptions& opts,
-                          IODebugContext* dbg) {
+  Status ReadIntoBuffer(size_t n) {
     if (n > buffer_.Capacity()) {
       n = buffer_.Capacity();
     }
     assert(IsFileSectorAligned(n, alignment_));
     Slice result;
-    IOStatus s = file_->Read(n, opts, &result, buffer_.BufferStart(), dbg);
+    Status s = file_->Read(n, &result, buffer_.BufferStart());
     if (s.ok()) {
       buffer_offset_ = read_offset_;
       buffer_.Size(result.size());
@@ -203,7 +199,7 @@ class ReadaheadSequentialFile : public FSSequentialFile {
     return s;
   }
 
-  const std::unique_ptr<FSSequentialFile> file_;
+  const std::unique_ptr<SequentialFile> file_;
   const size_t alignment_;
   const size_t readahead_size_;
 
@@ -222,16 +218,16 @@ class ReadaheadSequentialFile : public FSSequentialFile {
 };
 }  // namespace
 
-std::unique_ptr<FSSequentialFile>
+std::unique_ptr<SequentialFile>
 SequentialFileReader::NewReadaheadSequentialFile(
-    std::unique_ptr<FSSequentialFile>&& file, size_t readahead_size) {
+    std::unique_ptr<SequentialFile>&& file, size_t readahead_size) {
   if (file->GetRequiredBufferAlignment() >= readahead_size) {
     // Short-circuit and return the original file if readahead_size is
     // too small and hence doesn't make sense to be used for prefetching.
     return std::move(file);
   }
-  std::unique_ptr<FSSequentialFile> result(
+  std::unique_ptr<SequentialFile> result(
       new ReadaheadSequentialFile(std::move(file), readahead_size));
   return result;
 }
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

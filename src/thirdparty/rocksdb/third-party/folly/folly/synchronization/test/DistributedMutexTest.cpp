@@ -13,7 +13,7 @@
 #include <gtest/gtest.h>
 #endif
 
-#if !defined(ROCKSDB_LITE) && !defined(__ARM_ARCH)
+#ifndef ROCKSDB_LITE
 
 #include <chrono>
 #include <cmath>
@@ -1127,16 +1127,10 @@ TEST(DistributedMutex, StressBigValueReturnSixtyFourThreads) {
   concurrentBigValueReturnStress(64, std::chrono::seconds{kStressTestSeconds});
 }
 
-}  // namespace folly
+} // namespace folly
+#endif  // ROCKSDB_LITE
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
-#else
-int main(int /*argc*/, char** /*argv*/) {
-  printf("DistributedMutex is not supported in ROCKSDB_LITE or on ARM\n");
-  return 0;
-}
-#endif  // !ROCKSDB_LITE && !__ARM_ARCH

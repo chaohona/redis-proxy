@@ -15,7 +15,7 @@
 #include <cstring>
 #include "port/port.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 const char* Status::CopyState(const char* state) {
 #ifdef OS_WIN
@@ -140,4 +140,4 @@ std::string Status::ToString() const {
   return result;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

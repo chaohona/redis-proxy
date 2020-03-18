@@ -10,7 +10,7 @@
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 static int cfilter_count = 0;
 static int cfilter_skips = 0;
@@ -47,7 +47,8 @@ class DBTestCompactionFilterWithCompactParam
 
 #ifndef ROCKSDB_VALGRIND_RUN
 INSTANTIATE_TEST_CASE_P(
-    CompactionFilterWithOption, DBTestCompactionFilterWithCompactParam,
+    DBTestCompactionFilterWithCompactOption,
+    DBTestCompactionFilterWithCompactParam,
     ::testing::Values(DBTestBase::OptionConfig::kDefault,
                       DBTestBase::OptionConfig::kUniversalCompaction,
                       DBTestBase::OptionConfig::kUniversalCompactionMultiLevel,
@@ -55,7 +56,7 @@ INSTANTIATE_TEST_CASE_P(
                       DBTestBase::OptionConfig::kUniversalSubcompactions));
 #else
 // Run fewer cases in valgrind
-INSTANTIATE_TEST_CASE_P(CompactionFilterWithOption,
+INSTANTIATE_TEST_CASE_P(DBTestCompactionFilterWithCompactOption,
                         DBTestCompactionFilterWithCompactParam,
                         ::testing::Values(DBTestBase::OptionConfig::kDefault));
 #endif  // ROCKSDB_VALGRIND_RUN
@@ -863,10 +864,10 @@ TEST_F(DBTestCompactionFilter, IgnoreSnapshotsFalse) {
   delete options.compaction_filter;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 int main(int argc, char** argv) {
-  ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();
+  rocksdb::port::InstallStackTraceHandler();
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

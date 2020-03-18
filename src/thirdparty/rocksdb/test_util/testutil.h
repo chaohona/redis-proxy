@@ -13,8 +13,6 @@
 #include <string>
 #include <vector>
 
-#include "env/composite_env_wrapper.h"
-#include "file/writable_file_writer.h"
 #include "rocksdb/compaction_filter.h"
 #include "rocksdb/env.h"
 #include "rocksdb/iterator.h"
@@ -28,7 +26,7 @@
 #include "util/mutexlock.h"
 #include "util/random.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 class SequentialFile;
 class SequentialFileReader;
 
@@ -379,13 +377,6 @@ class StringSource: public RandomAccessFile {
   mutable int total_reads_;
 };
 
-inline StringSink* GetStringSinkFromLegacyWriter(
-    const WritableFileWriter* writer) {
-  LegacyWritableFileWrapper* file =
-      static_cast<LegacyWritableFileWrapper*>(writer->writable_file());
-  return static_cast<StringSink*>(file->target());
-}
-
 class NullLogger : public Logger {
  public:
   using Logger::Logv;
@@ -429,20 +420,6 @@ class SleepingBackgroundTask {
       bg_cv_.Wait();
     }
   }
-  // Waits for the status to change to sleeping,
-  // otherwise times out.
-  // wait_time is in microseconds.
-  // Returns true when times out, false otherwise.
-  bool TimedWaitUntilSleeping(uint64_t wait_time) {
-    auto abs_time = Env::Default()->NowMicros() + wait_time;
-    MutexLock l(&mutex_);
-    while (!sleeping_ || !should_sleep_) {
-      if (bg_cv_.TimedWait(abs_time)) {
-        return true;
-      }
-    }
-    return false;
-  }
   void WakeUp() {
     MutexLock l(&mutex_);
     should_sleep_ = false;
@@ -453,18 +430,6 @@ class SleepingBackgroundTask {
     while (!done_with_sleep_) {
       bg_cv_.Wait();
     }
-  }
-  // Similar to TimedWaitUntilSleeping.
-  // Waits until the task is done.
-  bool TimedWaitUntilDone(uint64_t wait_time) {
-    auto abs_time = Env::Default()->NowMicros() + wait_time;
-    MutexLock l(&mutex_);
-    while (!done_with_sleep_) {
-      if (bg_cv_.TimedWait(abs_time)) {
-        return true;
-      }
-    }
-    return false;
   }
   bool WokenUp() {
     MutexLock l(&mutex_);
@@ -496,8 +461,8 @@ class FilterNumber : public CompactionFilter {
 
   std::string last_merge_operand_key() { return last_merge_operand_key_; }
 
-  bool Filter(int /*level*/, const ROCKSDB_NAMESPACE::Slice& /*key*/,
-              const ROCKSDB_NAMESPACE::Slice& value, std::string* /*new_value*/,
+  bool Filter(int /*level*/, const rocksdb::Slice& /*key*/,
+              const rocksdb::Slice& value, std::string* /*new_value*/,
               bool* /*value_changed*/) const override {
     if (value.size() == sizeof(uint64_t)) {
       return num_ == DecodeFixed64(value.data());
@@ -505,9 +470,8 @@ class FilterNumber : public CompactionFilter {
     return true;
   }
 
-  bool FilterMergeOperand(
-      int /*level*/, const ROCKSDB_NAMESPACE::Slice& key,
-      const ROCKSDB_NAMESPACE::Slice& value) const override {
+  bool FilterMergeOperand(int /*level*/, const rocksdb::Slice& key,
+                          const rocksdb::Slice& value) const override {
     last_merge_operand_key_ = key.ToString();
     if (value.size() == sizeof(uint64_t)) {
       return num_ == DecodeFixed64(value.data());
@@ -530,8 +494,8 @@ inline std::string EncodeInt(uint64_t x) {
 
   class SeqStringSource : public SequentialFile {
    public:
-    SeqStringSource(const std::string& data, std::atomic<int>* read_count)
-        : data_(data), offset_(0), read_count_(read_count) {}
+    explicit SeqStringSource(const std::string& data)
+        : data_(data), offset_(0) {}
     ~SeqStringSource() override {}
     Status Read(size_t n, Slice* result, char* scratch) override {
       std::string output;
@@ -544,7 +508,6 @@ inline std::string EncodeInt(uint64_t x) {
         return Status::InvalidArgument(
             "Attemp to read when it already reached eof.");
       }
-      (*read_count_)++;
       return Status::OK();
     }
     Status Skip(uint64_t n) override {
@@ -560,7 +523,6 @@ inline std::string EncodeInt(uint64_t x) {
    private:
     std::string data_;
     size_t offset_;
-    std::atomic<int>* read_count_;
   };
 
   class StringEnv : public EnvWrapper {
@@ -612,7 +574,7 @@ inline std::string EncodeInt(uint64_t x) {
       if (iter == files_.end()) {
         return Status::NotFound("The specified file does not exist", f);
       }
-      r->reset(new SeqStringSource(iter->second, &num_seq_file_read_));
+      r->reset(new SeqStringSource(iter->second));
       return Status::OK();
     }
     Status NewRandomAccessFile(const std::string& /*f*/,
@@ -689,8 +651,6 @@ inline std::string EncodeInt(uint64_t x) {
     Status UnlockFile(FileLock* /*l*/) override {
       return Status::NotSupported();
     }
-
-    std::atomic<int> num_seq_file_read_;
 
    protected:
     std::unordered_map<std::string, std::string> files_;
@@ -799,4 +759,4 @@ bool IsDirectIOSupported(Env* env, const std::string& dir);
 size_t GetLinesCount(const std::string& fname, const std::string& pattern);
 
 }  // namespace test
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

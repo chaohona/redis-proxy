@@ -19,7 +19,7 @@
 #include "options/cf_options.h"
 #include "rocksdb/compaction_filter.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class CompactionIterator {
  public:
@@ -237,4 +237,4 @@ class CompactionIterator {
            manual_compaction_paused_->load(std::memory_order_relaxed);
   }
 };
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

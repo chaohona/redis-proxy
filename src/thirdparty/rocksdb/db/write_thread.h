@@ -24,7 +24,7 @@
 #include "rocksdb/write_batch.h"
 #include "util/autovector.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class WriteThread {
  public:
@@ -428,4 +428,4 @@ class WriteThread {
   void CompleteFollower(Writer* w, WriteGroup& write_group);
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

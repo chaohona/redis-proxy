@@ -10,7 +10,7 @@
 
 #include "rocksdb/stats_history.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 // InMemoryStatsHistoryIterator can be used to access stats history that was
 // stored by an in-memory two level std::map(DBImpl::stats_history_). It keeps
@@ -71,4 +71,4 @@ class InMemoryStatsHistoryIterator final : public StatsHistoryIterator {
   DBImpl* db_impl_;
 };
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

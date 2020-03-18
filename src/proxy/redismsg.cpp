@@ -320,6 +320,11 @@ int GR_RedisMsg::ParseRsp(GR_RedisMsgResults *pResults)
                         this->bReadingLine = true;
                         break;
                     }
+                    case SYMBOL_NULL: // 在没有消息的时候发送空字符直接跳过
+                    {
+                        this->m_Info.iLen = 0;
+                        return GR_START_NULL;
+                    }
                     default:
                     {
                         GR_LOGE("invalid char start:%c", ch);
@@ -811,6 +816,7 @@ GR_MsgIdenty *GR_MsgIdentyPool::Get()
 
         ASSERT(pIdenty->pData==nullptr && pIdenty->pReqData==nullptr);
         pIdenty->ulReqMS = CURRENT_MS();
+        pIdenty->iBroadcast = 0;
         return pIdenty;
     }
     catch(exception &e)

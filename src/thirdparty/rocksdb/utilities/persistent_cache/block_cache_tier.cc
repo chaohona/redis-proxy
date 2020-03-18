@@ -16,7 +16,7 @@
 #include "util/stop_watch.h"
 #include "utilities/persistent_cache/block_cache_tier_file.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 //
 // BlockCacheImpl
@@ -420,6 +420,6 @@ Status NewPersistentCache(Env* const env, const std::string& path,
   return s;
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
 
 #endif  // ifndef ROCKSDB_LITE

@@ -4,12 +4,12 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 // This file implements the callback "bridge" between Java and C++ for
-// ROCKSDB_NAMESPACE::TraceWriter.
+// rocksdb::TraceWriter.
 
 #include "rocksjni/trace_writer_jnicallback.h"
 #include "rocksjni/portal.h"
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 TraceWriterJniCallback::TraceWriterJniCallback(
     JNIEnv* env, jobject jtrace_writer)
     : JniCallback(env, jtrace_writer) {
@@ -112,4 +112,4 @@ uint64_t TraceWriterJniCallback::GetFileSize() {
   return static_cast<uint64_t>(jfile_size);
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb

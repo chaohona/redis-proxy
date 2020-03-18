@@ -19,13 +19,13 @@
 #include <stdint.h>
 #include <windows.h>
 
-namespace ROCKSDB_NAMESPACE {
+namespace rocksdb {
 
 class Env;
 
 namespace port {
 
-class WinLogger : public ROCKSDB_NAMESPACE::Logger {
+class WinLogger : public rocksdb::Logger {
  public:
   WinLogger(uint64_t (*gettid)(), Env* env, HANDLE file,
             const InfoLogLevel log_level = InfoLogLevel::ERROR_LEVEL);
@@ -38,7 +38,7 @@ class WinLogger : public ROCKSDB_NAMESPACE::Logger {
 
   void Flush() override;
 
-  using ROCKSDB_NAMESPACE::Logger::Logv;
+  using rocksdb::Logger::Logv;
   void Logv(const char* format, va_list ap) override;
 
   size_t GetLogFileSize() const override;
@@ -61,6 +61,7 @@ protected:
 
   const static uint64_t flush_every_seconds_ = 5;
 };
+
 }
 
-}  // namespace ROCKSDB_NAMESPACE
+}  // namespace rocksdb
