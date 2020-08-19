@@ -1323,20 +1323,33 @@ werr:
     return C_ERR;
 }
 
-int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
+/*******gredis********/
+int greis_rdbSaveBackground(char *filename, rdbSaveInfo *rsi, int onlyAof) {
     pid_t childpid;
     long long start;
 
+    serverLog(LL_NOTICE,"got cmd gredis_bgsave, try to increment aof file");
     if (server.aof_child_pid != -1 || server.rdb_child_pid != -1) return C_ERR;
 
     /*******gredis*********/
     /*flushAppendOnlyFile()*/
     if (server.aof_state == AOF_ON && server.aof_time_flag == AOF_TIME_FLAG_ON)
     {
+        serverLog(LL_NOTICE,"start to rewrite increment aof file, old aof rename to:%s.old", server.aof_filename);
         stopAppendOnly();
         startSkipAppendOnly();
     }
     /*******gredis*********/
+
+    if (onlyAof == 1)
+        return 0;
+    return rdbSaveBackground(filename, rsi);
+}
+int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
+    pid_t childpid;
+    long long start;
+
+    if (server.aof_child_pid != -1 || server.rdb_child_pid != -1) return C_ERR;
 
     server.dirty_before_bgsave = server.dirty;
     server.lastbgsave_try = time(NULL);
@@ -2511,6 +2524,47 @@ void bgsaveCommand(client *c) {
         addReply(c,shared.err);
     }
 }
+
+/*******gredis*******/
+void gredis_bgsaveCommand(client *c) {
+    int schedule = 0;
+    int onlyAof = 0;
+
+    /* The SCHEDULE option changes the behavior of BGSAVE when an AOF rewrite
+     * is in progress. Instead of returning an error a BGSAVE gets scheduled. */
+    if (c->argc > 1) {
+        if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr,"schedule")) {
+            schedule = 1;
+        } else if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr,"aof")) {
+            onlyAof = 1;
+        } else {
+            addReply(c,shared.syntaxerr);
+            return;
+        }
+    }
+
+    rdbSaveInfo rsi, *rsiptr;
+    rsiptr = rdbPopulateSaveInfo(&rsi);
+
+    if (server.rdb_child_pid != -1) {
+        addReplyError(c,"Background save already in progress");
+    } else if (server.aof_child_pid != -1) {
+        if (schedule) {
+            server.rdb_bgsave_scheduled = 1;
+            addReplyStatus(c,"Background saving scheduled");
+        } else {
+            addReplyError(c,
+                "An AOF log rewriting in progress: can't BGSAVE right now. "
+                "Use BGSAVE SCHEDULE in order to schedule a BGSAVE whenever "
+                "possible.");
+        }
+    } else if (greis_rdbSaveBackground(server.rdb_filename,rsiptr, onlyAof) == C_OK) {
+        addReplyStatus(c,"Background saving started");
+    } else {
+        addReply(c,shared.err);
+    }
+}
+
 
 /* Populate the rdbSaveInfo structure used to persist the replication
  * information inside the RDB file. Currently the structure explicitly

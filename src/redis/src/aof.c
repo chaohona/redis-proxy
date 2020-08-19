@@ -293,8 +293,15 @@ int startSkipAppendOnly(void) {
     int newfd;
 
     // if server.aof_filename exists, rename it
-    char tmpfile[256];
-    snprintf(tmpfile,256,"%s.old", server.aof_filename);
+    char tmpfile[1024];      
+    int off = snprintf(tmpfile,1024,"%s", server.aof_filename);
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    struct tm tm;
+    nolocks_localtime(&tm,tv.tv_sec,server.timezone,server.daylight_active);
+    off += strftime(tmpfile+off,1024-off,".%Y%m%d%H%M%S",&tm);
+    tmpfile[off] = 0;
+    
     if (access(server.aof_filename, F_OK) == 0) {
         if (rename(server.aof_filename, tmpfile) == -1) {
             char *cwdp = getcwd(cwd,MAXPATHLEN);

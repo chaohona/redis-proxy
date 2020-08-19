@@ -136,7 +136,9 @@ int rdbLoadLenByRef(rio *rdb, int *isencoded, uint64_t *lenptr);
 int rdbSaveObjectType(rio *rdb, robj *o);
 int rdbLoadObjectType(rio *rdb);
 int rdbLoad(char *filename, rdbSaveInfo *rsi);
+/********gredis********/
 int rdbSaveBackground(char *filename, rdbSaveInfo *rsi);
+int greis_rdbSaveBackground(char *filename, rdbSaveInfo *rsi, int onlyAof);
 int rdbSaveToSlavesSockets(rdbSaveInfo *rsi);
 void rdbRemoveTempFile(pid_t childpid);
 int rdbSave(char *filename, rdbSaveInfo *rsi);

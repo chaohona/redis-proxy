@@ -241,7 +241,10 @@ struct redisCommand redisCommandTable[] = {
     {"echo",echoCommand,2,"F",0,NULL,0,0,0,0,0},
     {"save",saveCommand,1,"as",0,NULL,0,0,0,0,0},
     {"bgsave",bgsaveCommand,-1,"as",0,NULL,0,0,0,0,0},
-    {"bgrewriteaof",bgrewriteaofCommand,1,"as",0,NULL,0,0,0,0,0},
+    /********gredis*********/
+    {"gredis_bgsave",gredis_bgsaveCommand,-1,"as",0,NULL,0,0,0,0,0},
+    //{"bgrewriteaof",bgrewriteaofCommand,1,"as",0,NULL,0,0,0,0,0},
+    {"gredis_bgrewriteaof",bgrewriteaofCommand,1,"as",0,NULL,0,0,0,0,0},
     {"shutdown",shutdownCommand,-1,"aslt",0,NULL,0,0,0,0,0},
     {"lastsave",lastsaveCommand,1,"RF",0,NULL,0,0,0,0,0},
     {"type",typeCommand,2,"rF",0,NULL,1,1,1,0,0},
@@ -1284,6 +1287,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
         /* Trigger an AOF rewrite if needed. */
         if (server.aof_state == AOF_ON &&
+            server.aof_time_flag != AOF_TIME_FLAG_ON &&
             server.rdb_child_pid == -1 &&
             server.aof_child_pid == -1 &&
             server.aof_rewrite_perc &&

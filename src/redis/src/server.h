@@ -1996,6 +1996,8 @@ void dbsizeCommand(client *c);
 void lastsaveCommand(client *c);
 void saveCommand(client *c);
 void bgsaveCommand(client *c);
+/******gredis******/
+void gredis_bgsaveCommand(client *c);
 void bgrewriteaofCommand(client *c);
 void shutdownCommand(client *c);
 void moveCommand(client *c);
